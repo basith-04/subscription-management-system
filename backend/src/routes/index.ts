@@ -61,6 +61,8 @@ export function createApiRouter({
   router.use('/me', createMeRouter(authenticate))
   router.use('/me', createPortalRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))
+  router.use('/quotations', createQuotationsRouter(authenticate))
+  router.use('/subscriptions', createSubscriptionsRouter(authenticate))
   router.use('/invoices', createInvoicesRouter(authenticate, config))
   router.use('/invoices', createInvoicePaymentsRouter(authenticate))
   router.use('/payments', createPaymentsRouter(authenticate))
