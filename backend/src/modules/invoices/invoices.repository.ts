@@ -344,3 +344,86 @@ export async function checkConsistency(db: Queryable, invoiceId: number): Promis
   const row = r.rows[0]
   return { lines: Number(row?.lines ?? 0), consistent: row?.consistent ?? false }
 }
+
+// ── draft creation (called by F12) ──
+
+export interface InsertDraftInvoiceData {
+  subscription_id: number
+  customer_id: number
+  billing_run_id: number | null
+  period_start: string
+  period_end: string
+  issue_date: string
+  due_date: string
+  customer_name: string
+  customer_email: string
+  customer_tax_id: string | null
+  billing_address: Record<string, unknown> | null
+  payment_term_name: string
+  subtotal: string
+  discount_total: string
+  tax_total: string
+  total: string
+  items: Array<{
+    subscription_item_id: number | null
+    product_id: number | null
+    description: string
+    quantity: number
+    unit_price: string
+    line_subtotal: string
+    discount_amount: string
+    taxable_amount: string
+    tax_name: string | null
+    tax_rate: string
+    tax_amount: string
+    line_total: string
+  }>
+  tax_details: Array<{
+    tax_name: string
+    tax_rate: string
+    taxable_amount: string
+    tax_amount: string
+  }>
+}
+
+export async function insertDraftInvoice(tx: Queryable, data: InsertDraftInvoiceData): Promise<number> {
+  const r = await tx.query<{ id: string }>(
+    \`INSERT INTO invoices (
+      subscription_id, customer_id, billing_run_id, status, period_start, period_end,
+      issue_date, due_date, customer_name, customer_email, customer_tax_id, billing_address,
+      payment_term_name, subtotal, discount_total, tax_total, total
+    ) VALUES ($1, $2, $3, 'draft', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    RETURNING id\`,
+    [
+      data.subscription_id, data.customer_id, data.billing_run_id, data.period_start, data.period_end,
+      data.issue_date, data.due_date, data.customer_name, data.customer_email, data.customer_tax_id,
+      data.billing_address ? JSON.stringify(data.billing_address) : null, data.payment_term_name,
+      data.subtotal, data.discount_total, data.tax_total, data.total
+    ]
+  )
+  const invoiceId = Number(r.rows[0]!.id)
+
+  for (const item of data.items) {
+    await tx.query(
+      \`INSERT INTO invoice_items (
+        invoice_id, subscription_item_id, product_id, description, quantity, unit_price,
+        line_subtotal, discount_amount, taxable_amount, tax_name, tax_rate, tax_amount, line_total
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\`,
+      [
+        invoiceId, item.subscription_item_id, item.product_id, item.description, item.quantity, item.unit_price,
+        item.line_subtotal, item.discount_amount, item.taxable_amount, item.tax_name, item.tax_rate,
+        item.tax_amount, item.line_total
+      ]
+    )
+  }
+
+  for (const tax of data.tax_details) {
+    await tx.query(
+      \`INSERT INTO invoice_tax_details (invoice_id, tax_name, tax_rate, taxable_amount, tax_amount)
+       VALUES ($1, $2, $3, $4, $5)\`,
+      [invoiceId, tax.tax_name, tax.tax_rate, tax.taxable_amount, tax.tax_amount]
+    )
+  }
+
+  return invoiceId
+}
