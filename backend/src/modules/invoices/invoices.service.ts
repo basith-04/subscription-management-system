@@ -423,3 +423,9 @@ export async function send(
 export async function renderPrint(pool: Pool, id: number, now: Date = new Date()): Promise<string> {
   return renderInvoiceHtml(await loadDetail(pool, id, now))
 }
+
+// ── creation (called by F12 billing engine) ──
+
+export async function createDraftInvoice(tx: Queryable, data: repo.InsertDraftInvoiceData): Promise<number> {
+  return repo.insertDraftInvoice(tx, data)
+}
