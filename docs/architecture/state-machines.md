@@ -64,7 +64,8 @@ validity guard accepts the inclusive deadline and an injected business date;
 the caller must obtain that date in the configured timezone. It does not
 perform database updates or enforce ownership or concurrency; the F09 service
 must apply those guards and the shared transactional transition helper. The
-shared helper and service integration are still pending. F10 must
+helper now supports F09 subscription updates and auditing on a caller-owned
+transaction; service integration is still pending. F10 must
 extend the same subscription state-machine module for later lifecycle actions.
 
 ### 2.3 Pause and renewal **[Proposed]** — operations, not states

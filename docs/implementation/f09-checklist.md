@@ -17,8 +17,12 @@ Status: **blocked on prerequisites**. This is not a completed feature.
 - [ ] F08: integrate quotation template migrations, `getTemplateForUse`,
   `TemplateSelect` and `LineItemsEditor`. Main currently has placeholders and
   no F08 migration or editor.
-- [ ] F00/F09: implement the shared conditional transition helper and wire the
-  F09 rule table into transactional services once coordinated.
+- [x] Implement the missing shared subscription transition helper in its
+  existing F00 location, using a caller-owned transaction, row lock, conditional
+  update and audit. PostgreSQL test-only tables verify commit, audit rollback
+  and concurrent conditional transitions; actual F09 schema verification remains.
+- [ ] Wire the F09 rule table and helper into transactional services after the
+  F09 schema and prerequisite modules land.
 - [ ] Repair remaining main baseline defects before end-to-end work: frontend
   `StaffListPage` fails typecheck; F06 product tests use obsolete demo identity
   headers; the two identity baselines both create `roles`/`users`, and the F07

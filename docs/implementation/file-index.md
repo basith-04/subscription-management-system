@@ -96,7 +96,10 @@ reset screens remain pending F02.
 | `audit.ts` | EXISTING | F00 | Transactional insert-only audit row writer. | Every state-changing service. |
 | `session.test.ts` | EXISTING | F01 | JWT signature, expiry-claim and algorithm regression tests. | Authentication. |
 | `scheduler.ts` | SCAFFOLDED | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |
-| `state-machine.ts` | SCAFFOLDED | F00 | `transition(entity, from[], to, opts)` — conditional `UPDATE … WHERE status = expected`; `409 INVALID_STATE_TRANSITION` on 0 rows. | `subscriptions.state-machine.ts`, `invoices.state-machine.ts`. |
+| `state-machine.ts` | EXISTING | F00 | Transaction-client subscription transition with locking, conditional update and audit. | F09 service must wire it; other entities/fields remain future work. |
+| `state-machine.test.ts` | EXISTING | F00 | Conditional transition and audit failure regression tests. | Shared state-machine helper. |
+| `tests/integration/db/state-machine.test.ts` | EXISTING | F00 / F09 | Test-only PostgreSQL transition and audit rollback checks. | Uses temporary tables, not the F09 production schema. |
+| `tests/integration/db/state-machine.concurrent.test.ts` | EXISTING | F00 / F09 | Test-only concurrent conditional transition checks. | Uses an isolated test schema, not the F09 production schema. |
 | `logger.ts` | SCAFFOLDED | F00 | Request-scoped structured logger. **Never log secrets, passwords, or PII.** | Every layer; don't `console.log`. |
 | `constants.ts` | SCAFFOLDED | F00 | Cross-module constants (role names, status enums). Mirror of `frontend/src/lib/constants.ts`. | Middleware, services. |
 
