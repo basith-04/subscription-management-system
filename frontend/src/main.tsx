@@ -9,6 +9,7 @@ import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth, RequireRole } from './features/auth/guards'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
+import { BillingRunPage } from './features/billing-runs'
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { PaymentListRoute } from './features/payments'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
@@ -47,6 +48,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="invoices" element={<InvoiceListRoute />} />
             <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
             <Route path="payments" element={<PaymentListRoute />} />
+            <Route path="billing" element={<BillingRunPage />} />
             <Route path="products" element={<ProductListRoute />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />

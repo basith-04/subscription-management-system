@@ -229,7 +229,7 @@ Per-module API clients. Each imports `apiRequest` (and `ApiError`) from `../lib/
 | `payment-terms.ts` | SCAFFOLDED | F05 | Payment terms CRUD. |
 | `discounts.ts` | SCAFFOLDED | F15 | Discount CRUD + grant/revoke. |
 | `invoices.ts` | SCAFFOLDED | F11 | Invoice CRUD + confirm/cancel/send/print. |
-| `billing-runs.ts` | SCAFFOLDED | F12 | `POST /billing/runs`, list, detail, upcoming. |
+| `billing-runs.ts` | IMPLEMENTED | F12 | Typed client for starting runs and reading run history/upcoming billing. |
 | `payments.ts` | SCAFFOLDED | F13 | Payment record/void/list. |
 | `portal.ts` | SCAFFOLDED | F14 | `/me/subscriptions`, `/me/invoices` (+ print). |
 | `reports.ts` | SCAFFOLDED | F16 | `/dashboard/summary` and every `/reports/*`. |
@@ -264,7 +264,7 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `payment-terms` | F05 | `pages/PaymentTermListPage.tsx`; `components/PaymentTermSelect.tsx`; `hooks/usePaymentTerms.ts`. | `PaymentTermSelect`. |
 | `discounts` | F15 | `pages/DiscountListPage.tsx`, `pages/DiscountDetailPage.tsx`; `components/DiscountsPanel.tsx`; `hooks/useDiscounts.ts`. | – |
 | `invoices` | F11 | `pages/InvoiceListPage.tsx`, `pages/InvoiceDetailPage.tsx`, `pages/InvoicePrintPage.tsx`; `components/PaymentStateBadge.tsx`, `components/InvoiceDocument.tsx`; `hooks/useInvoices.ts`. | `PaymentStateBadge`, `InvoiceDocument`. |
-| `billing-runs` | F12 | `pages/BillingPage.tsx`, `pages/BillingRunDetailPage.tsx`; `components/RunBillingButton.tsx`; `hooks/useBillingRuns.ts`. | – |
+| `billing-runs` | F12 | `pages/BillingRunPage.tsx`; `billing-runs.css`; run history, upcoming-billing summary and admin run-now action. | `BillingRunPage`. |
 | `payments` | F13 | `pages/PaymentListPage.tsx`; `components/RecordPaymentDialog.tsx`, `components/AllocationEditor.tsx`; `hooks/usePayments.ts`. | – |
 | `portal` | F14 | `pages/PortalHomePage.tsx`, `pages/MySubscriptionsPage.tsx`, `pages/MyInvoicesPage.tsx`; `components/`; `hooks/useMySubscriptions.ts`, `hooks/useMyInvoices.ts`. | – |
 | `reports` | F16 | `pages/DashboardPage.tsx`; `components/KpiCard.tsx`, `components/DateRangePicker.tsx`; `hooks/useDashboard.ts`. | – |
