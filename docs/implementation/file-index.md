@@ -169,6 +169,7 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 |---|---|---|---|---|
 | `schema.prisma` | SCAFFOLDED | F00 | Prisma schema — **only** if D-03 selects Prisma. | If D-03 lands on raw SQL, delete the file. Column-by-column must match [DB Design §4](../database/database-design.md). |
 | `migrations/` | EXISTING | each feature | Timestamp-named SQL migrations; F00 baseline exists. | Never edit a merged migration; fix forward. |
+| `migrations/20261031010000_f02_password_reset_tokens.sql` | EXISTING | F02 | Adds hashed single-use password reset tokens. | Forward-only. |
 | `seeds/reference/index.ts` | SCAFFOLDED | F00 | Idempotent seed: roles, first admin (from env per D-08), payment terms, sample taxes. | Safe to run in any environment. |
 | `seeds/demo/index.ts` | SCAFFOLDED | F00 | Demo story data for walkthroughs. | Never in production. |
 | `seeds/bulk/index.ts` | SCAFFOLDED | F00 | Bulk performance data (~5,000 subs / ~60,000 invoices) for the <2s criterion. | Used by S2 (Performance). |
