@@ -33,6 +33,11 @@ Status: **blocked on prerequisites**. This is not a completed feature.
   `33.33 × 5% = 1.67` case and override precedence with focused unit tests.
 - [x] Implement and test the pure F09 issue/confirm/cancel state-rule table;
   expiry, ownership, locking and auditing remain service responsibilities.
+- [x] Add strict request-shape schemas and unit tests. The schemas are not yet
+  mounted; active-record checks, plan policy, ownership and transactional
+  validation remain blocked on the missing services and migrations. If both a
+  template and a plan are supplied, the service must reject a plan that does not
+  match the selected template; request-shape validation cannot check the database.
 - [ ] Wire pricing into creation, editing and detail responses when F09's
   transaction boundaries and F05/F08 contracts are available.
 
