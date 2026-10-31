@@ -2,7 +2,7 @@ import type { Transaction } from '../db/client.js'
 
 export interface AuditLogPayload {
   actor: {
-    id: string
+    id: string | number
     email?: string
     role?: string
   }
@@ -16,7 +16,7 @@ export interface AuditLogPayload {
 export const audit = {
   async log(tx: Transaction, payload: AuditLogPayload) {
     return tx.createAuditLog({
-      actor_id: payload.actor.id,
+      actor_id: String(payload.actor.id),
       action: payload.action,
       entity_type: payload.entityType,
       entity_id: payload.entityId,
