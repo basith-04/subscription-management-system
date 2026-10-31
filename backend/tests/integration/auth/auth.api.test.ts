@@ -17,7 +17,7 @@ import { loadConfig } from '../../../src/config.js'
 import { signSessionToken } from '../../../src/lib/session.js'
 import { createAuthenticate } from '../../../src/middleware/authenticate.js'
 import { errorHandler } from '../../../src/middleware/error-handler.js'
-import { requireRole } from '../../../src/middleware/require-role.js'
+import { requirePermission } from '../../../src/middleware/permissions.js'
 import { createAuthRepository } from '../../../src/modules/auth/auth.repository.js'
 import { createTestApp } from '../../helpers/app.js'
 import {
@@ -489,7 +489,7 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
       const config = loadConfig({ APP_ENV: 'test', JWT_SECRET: TEST_JWT_SECRET } as NodeJS.ProcessEnv)
       const protectedApp = express()
       protectedApp.use(cookieParser())
-      protectedApp.get('/test-back-office', createAuthenticate({ repo: createAuthRepository(pool), config }), requireRole('admin', 'staff'), (_req, res) => res.sendStatus(200))
+      protectedApp.get('/test-back-office', createAuthenticate({ repo: createAuthRepository(pool), config }), requirePermission('backoffice:access'), (_req, res) => res.sendStatus(200))
       protectedApp.use(errorHandler)
       expect((await request(protectedApp).get('/test-back-office')).status).toBe(401)
       for (const role of ['admin', 'staff', 'customer'] as const) {

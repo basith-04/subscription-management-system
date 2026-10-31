@@ -14,8 +14,9 @@ end-to-end acceptance. Email verification is deferred.
   back up the intended database before changing its contents.
 - [ ] Verify a browser, the Docker daemon and Mailpit are available.
 - [x] Implement a failure-safe F00 SMTP mailer with isolated transport tests.
-- [ ] Verify real Mailpit delivery; implement the missing permissions map and
-  customer scoping where needed; verify the database user is least-privileged.
+- [x] Verify real Mailpit delivery and add F01 permissions and customer scoping.
+- [ ] Extend the permission map as business endpoints are implemented; verify
+  the database user is least-privileged before deployment.
 
 ## F01 checkpoint
 
@@ -26,8 +27,8 @@ end-to-end acceptance. Email verification is deferred.
 - [x] Test backend role middleware for Admin, Staff, Customer and anonymous.
 - [x] Test frontend form validation, pending state, duplicate email, role
   redirection, route guards and internal-only return paths.
-- [ ] Verify the seeded Admin and Staff on the intended development database.
-- [ ] Complete the browser walkthrough below at 360, 768 and 1280 pixels.
+- [x] Verify the seeded Admin and Staff on the intended development database.
+- [x] Verify the browser walkthrough below at 360, 768 and 1280 pixels on host.
 - [ ] Verify frontend/API cookie and CORS behavior through the intended Docker
   topology, and check browser back-navigation after logout.
 - [ ] Resolve the additional outstanding security and environment findings

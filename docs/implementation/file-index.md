@@ -71,7 +71,8 @@ reset screens remain pending F02.
 | `request-id.ts` | EXISTING | F00 | Attaches `X-Request-Id` (incoming header or UUID) to every request. | Consumed by `error-handler` for `request_id` in the envelope. |
 | `authenticate.ts` | EXISTING | F01 | Verify session cookie and reload user and role from PostgreSQL; rejects inactive users. | Called by protected routes. |
 | `require-role.ts` | EXISTING | F01 | `requireRole(...roles)` — `403 FORBIDDEN` when `req.user.role` isn't allowed. | F03 extends with `useCan`-style checks for menus. |
-| `permissions.ts` | SCAFFOLDED | F00 | The **single** permission map for the RBAC matrix ([Security §2](../architecture/security-and-rbac.md)). | Change the security doc first; then this map. |
+| `permissions.ts` | EXISTING | F00 | F01 named permissions and customer scoping from the authenticated identity. | Extend with business permissions as their endpoints are implemented. |
+| `permissions.test.ts` | EXISTING | F01 | Customer scope and authorization regression tests. | Never trust a client-supplied customer id. |
 | `validate.ts` | EXISTING | F00 | Zod-driven validation of body/params/query → `422 VALIDATION_ERROR` with `details[]`. | Every non-public endpoint goes through it. |
 | `rate-limit.ts` | EXISTING | F01 | In-memory rate limiter for credential endpoints. | Global and distributed limiting remain pending. |
 
