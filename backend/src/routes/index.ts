@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { plansRouter } from '../modules/plans/plans.routes.js'
 import { VERSION } from '../version.js'
 
 export interface HealthPayload {
@@ -30,3 +31,5 @@ apiRouter.get('/', (_req, res) => {
 apiRouter.get('/health', (_req, res) => {
   res.json({ data: healthPayload() })
 })
+
+apiRouter.use('/plans', plansRouter)
