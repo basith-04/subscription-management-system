@@ -1,0 +1,46 @@
+/* Customer portal — mobile-first (designed at 360px, enhanced upward). Colocated per frontend/AGENTS.md. */
+.portal-shell { color: #172333; } /* background, padding and font come from styles/global.css */
+.portal-header { flex-wrap: wrap; gap: .4rem .9rem; padding-bottom: 1.2rem; }
+.portal-brand { font-size: 1.1rem; } .portal-user { color: #556; font-size: .9rem; margin-left: auto; }
+.portal-nav { display: flex; flex-wrap: wrap; gap: .25rem; width: 100%; }
+.portal-nav a, .portal-nav button { padding: .6rem .8rem; min-height: 44px; border-radius: .4rem; border: 1px solid transparent; background: none; font: inherit; color: #154f85; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; }
+.portal-nav a.active { background: #e8f0f8; font-weight: 600; } .portal-nav button { border-color: #c8d2dc; margin-left: auto; }
+.portal-content { max-width: 64rem; padding-bottom: 3rem; }
+.portal-stack { display: flex; flex-direction: column; gap: 1rem; } .portal-stack h1 { margin: .2rem 0; font-size: 1.4rem; overflow-wrap: anywhere; }
+.portal-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+.portal-card { background: #fff; border: 1px solid #dce3ea; border-radius: .6rem; padding: .9rem; }
+.portal-card__head { display: flex; justify-content: space-between; gap: .5rem; align-items: center; } .portal-card__head h3 { margin: 0; overflow-wrap: anywhere; }
+.portal-facts { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem .9rem; margin: .6rem 0; } .portal-facts div { display: flex; flex-direction: column; min-width: 0; }
+.portal-facts dt { font-size: .75rem; text-transform: uppercase; color: #556; } .portal-facts dd { margin: 0; overflow-wrap: anywhere; }
+.portal-summary { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: 0; } .portal-summary div { background: #fff; border: 1px solid #dce3ea; border-radius: .6rem; padding: .8rem; }
+.portal-summary dt { font-size: .75rem; text-transform: uppercase; color: #556; } .portal-summary dd { margin: .2rem 0 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.portal-summary .is-overdue { border-color: #f0b3ae; background: #fbe4e2; }
+.portal-badge { display: inline-block; padding: .1rem .6rem; border-radius: 1rem; font-size: .8rem; font-weight: 600; background: #eef1f4; border: 1px solid #c8d2dc; }
+.portal-badge--active { background: #e8f5ec; color: #1b6e2d; } .portal-badge--quotation { background: #e8f0f8; color: #154f85; } .portal-badge--closed { background: #f3e1df; color: #6b3a36; }
+.portal-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: .5rem 1rem; border: 1px solid #9aabba; border-radius: .5rem; background: #fff; font: inherit; cursor: pointer; text-decoration: none; color: inherit; }
+.portal-button--primary { background: #154f85; border-color: #154f85; color: #fff; } .portal-button--danger { background: #a31f17; border-color: #a31f17; color: #fff; }
+.portal-button:disabled { opacity: .55; cursor: not-allowed; }
+.portal-actions { display: flex; flex-wrap: wrap; gap: .5rem; } .portal-actions .portal-button { flex: 1 1 10rem; }
+.portal-field { display: flex; flex-direction: column; gap: .25rem; font-weight: 600; } .portal-field select { min-height: 44px; padding: .4rem; border: 1px solid #9aabba; border-radius: .4rem; font: inherit; }
+.portal-filters { display: grid; grid-template-columns: 1fr; gap: .6rem; }
+.portal-empty, .portal-muted { color: #556; } .portal-error-text { color: #a31f17; } .portal-ok-text { color: #1b6e2d; }
+.portal-skeleton { height: 8rem; background: #e9edf1; border-radius: .6rem; display: flex; align-items: center; justify-content: center; color: #556; }
+.portal-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; } .portal-list li { background: #fff; border: 1px solid #dce3ea; border-radius: .5rem; padding: .6rem .8rem; overflow-wrap: anywhere; }
+.portal-list .is-voided { text-decoration: line-through; color: #6b3a36; } .portal-list .is-voided .portal-badge { text-decoration: none; }
+.portal-lines { list-style: none; padding: 0; margin: 0 0 .75rem; display: flex; flex-direction: column; gap: .5rem; } .portal-lines li { display: flex; flex-direction: column; gap: .15rem; }
+.portal-pager { display: flex; gap: .75rem; align-items: center; justify-content: space-between; } .portal-pager button { min-height: 44px; padding: .4rem .9rem; border: 1px solid #9aabba; border-radius: .4rem; background: #fff; font: inherit; }
+/* Invoices: cards on phones, a table from 720px up. */
+.portal-table { width: 100%; border-collapse: collapse; background: #fff; }
+.portal-table thead { position: absolute; left: -9999px; }
+.portal-table, .portal-table tbody, .portal-table tr, .portal-table td { display: block; width: 100%; }
+.portal-table tr { border: 1px solid #dce3ea; border-radius: .6rem; margin-bottom: .6rem; padding: .4rem .7rem; }
+.portal-table td { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; border: 0; } .portal-table td::before { content: attr(data-label); font-weight: 600; color: #556; }
+@media (min-width: 720px) {
+  .portal-grid { grid-template-columns: repeat(2, 1fr); } .portal-filters { grid-template-columns: 1fr 1fr; max-width: 32rem; }
+  .portal-nav { width: auto; } .portal-header { flex-wrap: nowrap; } .portal-user { margin-left: 0; }
+  .portal-table { display: table; } .portal-table thead { position: static; display: table-header-group; } .portal-table tbody { display: table-row-group; }
+  .portal-table tr { display: table-row; border: 0; margin: 0; padding: 0; } .portal-table td, .portal-table th { display: table-cell; width: auto; padding: .6rem .5rem; border-bottom: 1px solid #dce3ea; text-align: left; }
+  .portal-table td::before { content: none; } .portal-table .num { text-align: right; }
+}
+@media (min-width: 1000px) { .portal-grid { grid-template-columns: repeat(3, 1fr); } }
+@media print { .portal-shell { background: #fff; padding: 0; } .portal-content { padding: 0; max-width: none; } .no-print { display: none !important; } }

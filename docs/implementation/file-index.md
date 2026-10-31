@@ -40,6 +40,21 @@ Three purposes:
 | `docs/implementation/auth-integration-checklist.md` | EXISTING | F01 gate, manual walkthrough and pending F02/deployment checklist. |
 | `backend/tests/integration/catalogue/reference-data.api.test.ts` | EXISTING | F05 PostgreSQL persistence, session authorization, audit and foreign-key integration tests. |
 
+F08 implementation files (integration with the existing F05 and migration
+chain remains pending; see API Specification §7.1):
+
+| File | Status | Owner | Purpose |
+|---|---|---|---|
+| `backend/db/migrations/20261116000000_f08_quotation_templates.sql` | EXISTING | F08 | Template and item tables, constraints and indexes. |
+| `backend/tests/integration/quotation-templates/quotation-templates.api.test.ts` | EXISTING | F08 | Real-session API and reference validation tests using isolated schema fixtures. |
+| `frontend/src/components/LineItemsEditor.tsx` | EXISTING | F08 | Controlled shared line editor and exact line amounts. |
+| `frontend/src/components/LineItemsEditor.test.tsx` | EXISTING | F08 | Editor and exact-money unit/component tests. |
+| `frontend/src/features/quotation-templates/TemplateListPage.tsx` | EXISTING | F08 | List, filter and deactivate templates. |
+| `frontend/src/features/quotation-templates/TemplateFormPage.tsx` | EXISTING | F08 | Create, view and edit templates. |
+| `frontend/src/features/quotation-templates/TemplateFormPage.test.tsx` | EXISTING | F08 | Template payload and Staff read-only tests. |
+| `frontend/src/features/quotation-templates/TemplateSelect.tsx` | EXISTING | F08 | Active template picker for F09. |
+| `frontend/src/features/quotation-templates/TemplateSelect.test.tsx` | EXISTING | F08 | Active-template search and selection tests. |
+
 F01 frontend additions: `frontend/src/features/auth/` contains the login and
 registration pages, password field, auth layout, guarded shells, query hook,
 route guards, CSS and component tests. These implement the F01 paths; password
@@ -354,7 +369,7 @@ Generic hooks used by two or more features. Feature hooks live in `features/<f>/
 |---|---|---|---|
 | `api.ts` | **EXISTING** | F00 | The single fetch wrapper. Every `src/api/<module>.ts` imports from it. |
 | `money.ts` | SCAFFOLDED | F00 | Display-only money formatting (₹1,560.00). Never parse to `Number` for arithmetic. |
-| `dates.ts` | SCAFFOLDED | F00 | Display-only date formatting. Wire format stays `YYYY-MM-DD` / ISO-8601. |
+| `dates.ts` | IMPLEMENTED | F00 | Display-only date formatting, including safe ISO/date-only display. Wire format stays `YYYY-MM-DD` / ISO-8601. |
 | `format.ts` | SCAFFOLDED | F00 | Generic display helpers (capitalise, pluralise). |
 | `constants.ts` | SCAFFOLDED | F00 | Cross-feature constants (role names, statuses). Mirrors `backend/src/lib/constants.ts`. |
 | `apply-server-errors.ts` | SCAFFOLDED | F00 | Map `ApiError.details[]` to React Hook Form `setError` calls. |

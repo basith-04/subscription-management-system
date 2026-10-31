@@ -6,6 +6,7 @@ import { createCustomersRouter, createMeRouter } from '../modules/customers/cust
 import { createInvoicesRouter } from '../modules/invoices/invoices.routes.js'
 import { createInvoicePaymentsRouter, createPaymentsRouter } from '../modules/payments/payments.routes.js'
 import { createQuotationsRouter, createSubscriptionsRouter } from '../modules/subscriptions/subscriptions.routes.js'
+import { createPortalRouter } from '../modules/portal/portal.routes.js'
 import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { createProductsRouter, createVariantsRouter } from '../modules/products/products.routes.js'
@@ -13,6 +14,7 @@ import { createTaxesRouter } from '../modules/taxes/index.js'
 import { createPaymentTermsRouter } from '../modules/payment-terms/index.js'
 import { VERSION } from '../version.js'
 import { createBillingRunsRouter } from '../modules/billing-runs/index.js'
+import { createQuotationTemplatesRouter } from '../modules/quotation-templates/index.js'
 import { createAuditLogsRouter } from '../modules/audit-logs/index.js'
 
 export interface HealthPayload {
@@ -60,7 +62,11 @@ export function createApiRouter({
   router.use('/audit-logs', createAuditLogsRouter(authenticate))
   router.use('/customers', createCustomersRouter(authenticate))
   router.use('/me', createMeRouter(authenticate))
+  router.use('/me', createPortalRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))
+  router.use('/quotation-templates', createQuotationTemplatesRouter(authenticate))
+  router.use('/quotations', createQuotationsRouter(authenticate))
+  router.use('/subscriptions', createSubscriptionsRouter(authenticate))
   router.use('/invoices', createInvoicesRouter(authenticate, config))
   router.use('/invoices', createInvoicePaymentsRouter(authenticate))
   router.use('/payments', createPaymentsRouter(authenticate))

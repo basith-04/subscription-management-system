@@ -1,6 +1,6 @@
-/** Display-only formatter; API values remain YYYY-MM-DD / ISO-8601. */
+/** Display an ISO date without altering the date-only wire value. */
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
-  const date = new Date(value.length === 10 ? `${value}T00:00:00` : value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString()
+  const parsed = new Date(`${value.slice(0, 10)}T00:00:00Z`)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString()
 }

@@ -1,1 +1,2 @@
-// Public API of the quotation-templates module — exports service functions only. PLACEHOLDER — replace with implementation.
+export { createQuotationTemplatesRouter } from './quotation-templates.routes.js'
+export { getTemplateForUse } from './quotation-templates.service.js'
