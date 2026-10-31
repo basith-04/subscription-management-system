@@ -35,4 +35,27 @@ describe('migration selection', () => {
       await rm(directory, { recursive: true })
     }
   })
+
+  it('applies documented feature prerequisites before timestamp order', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'brightloop-migrations-'))
+    const f06 = '20261115000000_f06_products.sql'
+    const f07 = '20261108090000_f07_plans.sql'
+    const applied: string[] = []
+    const client = {
+      release() {},
+      async query(sql: string, params?: unknown[]) {
+        if (sql.startsWith('INSERT INTO schema_migrations')) applied.push(String(params?.[0]))
+        return { rows: [], rowCount: 0 }
+      },
+    }
+    const pool = { query: client.query, connect: async () => client } as unknown as Pool
+    try {
+      await writeFile(path.join(directory, f06), 'F06')
+      await writeFile(path.join(directory, f07), 'F07')
+      await runMigrations(pool, directory)
+      expect(applied).toEqual([f06, f07])
+    } finally {
+      await rm(directory, { recursive: true })
+    }
+  })
 })

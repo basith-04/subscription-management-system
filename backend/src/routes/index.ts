@@ -14,6 +14,7 @@ import { createTaxesRouter } from '../modules/taxes/index.js'
 import { createPaymentTermsRouter } from '../modules/payment-terms/index.js'
 import { VERSION } from '../version.js'
 import { createBillingRunsRouter } from '../modules/billing-runs/index.js'
+import { createQuotationTemplatesRouter } from '../modules/quotation-templates/index.js'
 import { createAuditLogsRouter } from '../modules/audit-logs/index.js'
 
 export interface HealthPayload {
@@ -63,6 +64,7 @@ export function createApiRouter({
   router.use('/me', createMeRouter(authenticate))
   router.use('/me', createPortalRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))
+  router.use('/quotation-templates', createQuotationTemplatesRouter(authenticate))
   router.use('/quotations', createQuotationsRouter(authenticate))
   router.use('/subscriptions', createSubscriptionsRouter(authenticate))
   router.use('/invoices', createInvoicesRouter(authenticate, config))

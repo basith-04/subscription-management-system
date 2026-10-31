@@ -74,6 +74,12 @@ The API needs PostgreSQL. The default `DATABASE_URL` expects a local
 `brightloop` database; create it first (`createdb brightloop`). Tests use a
 separate `TEST_DATABASE_URL` database.
 
+F08 quotation-template work is in progress. F08 needs PostgreSQL-backed F05
+reference data and the F06/F07 tables before its migration. The current F05 API
+uses an in-memory store, and the unscoped migration chain has existing ordering
+and duplicate-baseline issues; do not treat the F08 workflow as complete until
+those prerequisites and the checks in API Specification §7.1 are resolved.
+
 ### Node.js or Bun
 
 Both apps support npm and Bun; lockfiles for both package managers are committed.

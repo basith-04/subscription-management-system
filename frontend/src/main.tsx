@@ -16,6 +16,7 @@ import { QuotationCreatePage, QuotationDetailPage, QuotationListPage, Subscripti
 import { ChangePasswordPage, MyInvoiceDetailPage, MyInvoicesPage, MySubscriptionDetailPage, MySubscriptionsPage, PortalHomePage, ProfilePage } from './features/portal'
 import { PortalNotFound } from './features/portal/components/PortalNotFound'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
+import { TemplateFormPage, TemplateListPage } from './features/quotation-templates'
 import { AuditLogPage } from './features/audit-logs'
 import { PlanListRoute } from './features/plans/routes/PlanListRoute'
 import { TaxListPage } from './features/taxes'
@@ -65,8 +66,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="payments" element={<PaymentListRoute />} />
             <Route path="billing" element={<BillingRunPage />} />
             <Route path="products" element={<ProductListRoute />} />
+            <Route path="quotation-templates" element={<TemplateListPage />} />
+            <Route path="quotation-templates/:id" element={<TemplateFormPage />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />
+              <Route path="quotation-templates/new" element={<TemplateFormPage />} />
             </Route>
             <Route path="products/:id" element={<ProductDetailRoute />} />
             <Route path="plans" element={<PlanListRoute />} />
