@@ -33,6 +33,10 @@ Three purposes:
 
 | Documentation file | Status | Purpose |
 |---|---|---|
+| `docs/implementation/f09-checklist.md` | EXISTING | F09 prerequisite assessment, blocked items and implementation checklist. |
+
+| Documentation file | Status | Purpose |
+|---|---|---|
 | `docs/implementation/auth-integration-checklist.md` | EXISTING | F01 gate, manual walkthrough and pending F02/deployment checklist. |
 
 F01 frontend additions: `frontend/src/features/auth/` contains the login and
@@ -82,7 +86,8 @@ reset screens remain pending F02.
 |---|---|---|---|---|
 | `db.ts` | EXISTING | F00 | Database client, transaction helpers and Postgres error mapping. | Every repository. |
 | `money.ts` | EXISTING | F00 | Decimal-safe money: string arithmetic, `ROUND_HALF_UP` to 2 dp. | Products (F06), plans (F07), billing (F12), payments (F13). |
-| `dates.ts` | EXISTING | F00 | "Today" in `APP_TIMEZONE`; `YYYY-MM-DD` parsing. | Everywhere dates matter; critical for F12. |
+| `dates.ts` | EXISTING | F00 | Validates ISO calendar dates and resolves an injected instant in `APP_TIMEZONE`. | F09 and later date-dependent features. |
+| `dates.test.ts` | EXISTING | F00 | Business-timezone and calendar-date regression tests. | Date helpers. |
 | `pagination.ts` | EXISTING | F00 | Parse `page` / `page_size` (max 100), build `meta`; whitelisted sort parsing. | Every list endpoint. |
 | `responses.ts` | EXISTING | F00 | `ok`, `created`, `list`, `noContent`. | Every controller. |
 | `errors.ts` | EXISTING | F00 | `ApiError` class (status, code, message, details). | Services, middleware. |
@@ -92,7 +97,10 @@ reset screens remain pending F02.
 | `audit.ts` | EXISTING | F00 | Transactional insert-only audit row writer. | Every state-changing service. |
 | `session.test.ts` | EXISTING | F01 | JWT signature, expiry-claim and algorithm regression tests. | Authentication. |
 | `scheduler.ts` | EXISTING | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |
-| `state-machine.ts` | EXISTING | F00 | `transition(entity, from[], to, opts)` — conditional `UPDATE … WHERE status = expected`; `409 INVALID_STATE_TRANSITION` on 0 rows. | `subscriptions.state-machine.ts`, `invoices.state-machine.ts`. |
+| `state-machine.ts` | EXISTING | F00 | Transaction-client subscription transition with locking, conditional update and audit. | F09 service must wire it; other entities/fields remain future work. |
+| `state-machine.test.ts` | EXISTING | F00 | Conditional transition and audit failure regression tests. | Shared state-machine helper. |
+| `tests/integration/db/state-machine.test.ts` | EXISTING | F00 / F09 | Test-only PostgreSQL transition and audit rollback checks. | Uses temporary tables, not the F09 production schema. |
+| `tests/integration/db/state-machine.concurrent.test.ts` | EXISTING | F00 / F09 | Test-only concurrent conditional transition checks. | Uses an isolated test schema, not the F09 production schema. |
 | `logger.ts` | SCAFFOLDED | F00 | Request-scoped structured logger. **Never log secrets, passwords, or PII.** | Every layer; don't `console.log`. |
 | `constants.ts` | SCAFFOLDED | F00 | Cross-module constants (role names, status enums). Mirror of `frontend/src/lib/constants.ts`. | Middleware, services. |
 
@@ -108,7 +116,8 @@ This folder is the engine, not the API. The API lives in `modules/billing-runs/`
 
 | File | Status | Owner | Purpose |
 |---|---|---|---|
-| `calculators/pricing.ts` | SCAFFOLDED | F09 | Pure functions: `computeLine`, `computeTotals` (quantity × unit_price, tax per line). |
+| `calculators/pricing.ts` | EXISTING | F09 | Pure `resolveUnitPrice`, `computeLine`, `computeTotals`; decimal-safe pre-discount pricing. |
+| `calculators/pricing.test.ts` | EXISTING | F09 | Price precedence, tax rounding, precision and input-boundary tests. |
 | `calculators/periods.ts` | EXISTING | F12 | Pure period-date math: `periodStart`/`periodEnd`; month-end clamping; leap years. |
 | `calculators/tax.ts` | SCAFFOLDED | F09 | Pure per-line tax computation; aggregates `invoice_tax_details` from rounded lines. |
 | `calculators/discounts.ts` | SCAFFOLDED | F15 | Pure discount eligibility and allocation: `selectEligibleDiscount`, `allocateToLines`. |
@@ -137,6 +146,11 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | Module | API prefix | Owner | Tables (owned) | Notable extra files / notes |
 |---|---|---|---|---|
 | `auth` | `/auth` | F01 (register/login/me/logout) + F02 (forgot/reset/change) | `password_reset_tokens` (F02) | F01 backend implemented; F02 remains pending. |
+| `subscriptions.state-machine.ts` | — | F09 / F10 | — | F09 pure transition rules exist; transactional service wiring remains pending. |
+| `subscriptions.state-machine.test.ts` | — | F09 | — | Unit tests cover every F09 action/state pair and invalid states. |
+| `subscriptions.schemas.test.ts` | — | F09 | — | Request-shape, input-whitelist, date and filter regression tests. |
+| `subscriptions.validation.ts` | — | F09 | — | Pure F07 availability and per-line plan-minimum guard; transaction wiring is pending. |
+| `subscriptions.validation.test.ts` | — | F09 | — | Availability and minimum-quantity guard regression tests. |
 | `users` | `/users` | F03 | `users`, `roles` | ✅ **IMPLEMENTED.** Includes last-admin guard and self-deactivation prevention. |
 | `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | ✅ **IMPLEMENTED.** Exports `CustomerSelect` on the frontend side. |
 | `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | ✅ **IMPLEMENTED.** Exports `computeEffectivePrice` from `index.ts`. |
@@ -187,6 +201,7 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | Path | Status | Owner | Purpose |
 |---|---|---|---|
 | `health.test.ts` | **EXISTING** | F00 | Smoke test that `createApp()` responds to health checks. |
+| `auth-forgery.test.ts` | EXISTING | F00 / F09 | Reject forged role and bearer credentials on protected integrated routes. |
 | `setup.ts` | SCAFFOLDED | F00 | Apply migrations, truncate between test files, close the pool at the end. |
 | `helpers/login-as.ts` | SCAFFOLDED | F00 | `loginAs(role)` — returns a supertest agent with a session cookie for a test user. |
 | `helpers/clock.ts` | EXISTING | F00 | Injectable clock — needed by F10/F12 tests. |

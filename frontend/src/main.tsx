@@ -12,6 +12,7 @@ import { AccountShell } from './features/auth/AccountShell'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { PaymentListRoute } from './features/payments'
+import { QuotationCreatePage, QuotationDetailPage, QuotationListPage, SubscriptionDetailPage, SubscriptionListPage } from './features/subscriptions'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
 
@@ -39,6 +40,12 @@ createRoot(document.getElementById('root')!).render(
             <Route path="customers/:id/edit" element={<CustomerFormPage />} />
             <Route path="invoices" element={<InvoiceListRoute />} />
             <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
+            <Route path="quotations" element={<QuotationListPage />} />
+            <Route path="quotations/new" element={<QuotationCreatePage />} />
+            <Route path="quotations/:id" element={<QuotationDetailPage />} />
+            <Route path="quotations/:id/edit" element={<QuotationCreatePage />} />
+            <Route path="subscriptions" element={<SubscriptionListPage />} />
+            <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
             <Route path="payments" element={<PaymentListRoute />} />
             <Route path="products" element={<ProductListRoute />} />
             <Route element={<RequireRole roles={['admin']} />}>

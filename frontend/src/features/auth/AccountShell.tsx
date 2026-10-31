@@ -32,6 +32,8 @@ export function AccountShell({ area }: { area: 'portal' | 'app' }) {
       <p>Signed in as {user?.role}.</p>
       {area === 'app' && <nav aria-label="Back office">
         <Link to="/app/customers">Customers</Link>
+        <Link to="/app/quotations">Quotations</Link>
+        <Link to="/app/subscriptions">Subscriptions</Link>
         <Link to="/app/invoices">Invoices</Link>
         <Link to="/app/payments">Payments</Link>
         <Link to="/app/products">Products</Link>
