@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { getHealth, type Health } from './lib/api'
 import { ProductListPage, ProductDetailPage, ProductFormPage } from './features/products'
 import { StaffListPage } from './features/users'
+import { AuthProvider } from './lib/auth-context'
+import { TaxListPage } from './features/taxes'
+import { PaymentTermListPage } from './features/payment-terms'
 import './App.css'
 
 type ApiState = { status: 'checking' } | { status: 'online'; health: Health } | { status: 'offline'; message: string }
@@ -22,15 +25,16 @@ export function navigate(to: string): void {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
-
 function Sidebar({ navigate }: { navigate: (p: string) => void }) {
-  const role = import.meta.env.VITE_DEMO_USER_ROLE || 'admin' 
-  
+  const role = import.meta.env.VITE_DEMO_USER_ROLE || 'admin'
+
   return (
     <nav style={{ width: 240, borderRight: '1px solid #e2ded4', padding: '1rem', background: '#f7f6f2', minHeight: '100vh' }}>
       <div style={{ fontWeight: 700, marginBottom: '2rem', color: '#1f6f4a', fontSize: '1.2rem' }}>Brightloop</div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem' }}>
         <li><a href="/app/products" onClick={e => { e.preventDefault(); navigate('/app/products') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Products</a></li>
+        <li><a href="/app/taxes" onClick={e => { e.preventDefault(); navigate('/app/taxes') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Taxes</a></li>
+        <li><a href="/app/payment-terms" onClick={e => { e.preventDefault(); navigate('/app/payment-terms') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Payment Terms</a></li>
         {role === 'admin' && (
           <li><a href="/app/users" onClick={e => { e.preventDefault(); navigate('/app/users') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Staff</a></li>
         )}
@@ -40,10 +44,12 @@ function Sidebar({ navigate }: { navigate: (p: string) => void }) {
 }
 
 const renderWithLayout = (Page: React.ReactNode) => (
-  <div style={{ display: 'flex' }}>
-    <Sidebar navigate={navigate} />
-    <div style={{ flex: 1 }}>{Page}</div>
-  </div>
+  <AuthProvider>
+    <div style={{ display: 'flex' }}>
+      <Sidebar navigate={navigate} />
+      <div style={{ flex: 1 }}>{Page}</div>
+    </div>
+  </AuthProvider>
 )
 
 export default function App() {
@@ -53,6 +59,8 @@ export default function App() {
   const m = path.match(/^\/app\/products\/(\d+)$/)
   if (m) return renderWithLayout(<ProductDetailPage id={Number(m[1])} navigate={navigate} />)
   if (path === '/app/users') return renderWithLayout(<StaffListPage navigate={navigate} />)
+  if (path === '/app/taxes') return renderWithLayout(<TaxListPage />)
+  if (path === '/app/payment-terms') return renderWithLayout(<PaymentTermListPage />)
 
   return <LandingPage />
 }
@@ -82,6 +90,8 @@ function LandingPage() {
         </a>
         <nav className="nav" aria-label="Main navigation">
           <a href="/app/products">Products</a>
+          <a href="/app/taxes">Taxes</a>
+          <a href="/app/payment-terms">Payment Terms</a>
           <a href="#status">Status</a>
           <a href="/login">Sign in</a>
           <a href="/register">Register</a>

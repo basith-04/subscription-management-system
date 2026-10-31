@@ -9,6 +9,9 @@ export interface ValidationSchemas {
   params?: ZodType
 }
 
+export type ValidateSchemas = ValidationSchemas
+export type ValidationSpec = ValidationSchemas
+
 function toFieldErrors(error: ZodError): FieldError[] {
   return error.issues.map((issue) => ({
     field: issue.path.length > 0 ? issue.path.join('.') : 'body',
@@ -21,7 +24,7 @@ function toFieldErrors(error: ZodError): FieldError[] {
  * rejected when the module schema is strict.
  */
 export function validate(schemas: ValidationSchemas): RequestHandler {
-  return (req, _res, next) => {
+  return (req, res, next) => {
     try {
       if (schemas.body) {
         req.body = schemas.body.parse(req.body)
@@ -30,9 +33,11 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
         // Express 5 exposes query as a getter; shadow it with the validated value.
         const query = schemas.query.parse(req.query)
         Object.defineProperty(req, 'query', { value: query, writable: true, configurable: true, enumerable: true })
+        res.locals.query = query
       }
       if (schemas.params) {
-        req.params = schemas.params.parse(req.params) as typeof req.params
+        const params = schemas.params.parse(req.params) as typeof req.params
+        Object.defineProperty(req, 'params', { value: params, writable: true, configurable: true, enumerable: true })
       }
       next()
     } catch (error) {
