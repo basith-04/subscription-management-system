@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { plansRouter } from '../modules/plans/plans.routes.js'
+import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
 import { VERSION } from '../version.js'
 
@@ -29,3 +30,4 @@ apiRouter.use('/plans', plansRouter)
 // F06
 apiRouter.use('/products', productsRouter)
 apiRouter.use('/variants', variantsRouter)
+apiRouter.use('/users', usersRouter)
