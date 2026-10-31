@@ -105,7 +105,7 @@ const DETAIL_COLUMNS = `i.id, i.number, i.subscription_id, i.customer_id, i.bill
   i.confirmed_at, i.paid_at, i.cancelled_at, i.sent_at, i.cancel_reason, i.created_at, i.updated_at`
 
 /** Escape LIKE wildcards so user input is matched literally. */
-const likePattern = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+const likePattern = (q: string) => `%${q.replace(/[\%_]/g, (c) => `\${c}`)}%`
 
 /**
  * One WHERE builder shared by the list and the summary aggregate, so `meta.summary` always
@@ -388,12 +388,12 @@ export interface InsertDraftInvoiceData {
 
 export async function insertDraftInvoice(tx: Queryable, data: InsertDraftInvoiceData): Promise<number> {
   const r = await tx.query<{ id: string }>(
-    \`INSERT INTO invoices (
+    `INSERT INTO invoices (
       subscription_id, customer_id, billing_run_id, status, period_start, period_end,
       issue_date, due_date, customer_name, customer_email, customer_tax_id, billing_address,
       payment_term_name, subtotal, discount_total, tax_total, total
     ) VALUES ($1, $2, $3, 'draft', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-    RETURNING id\`,
+    RETURNING id`,
     [
       data.subscription_id, data.customer_id, data.billing_run_id, data.period_start, data.period_end,
       data.issue_date, data.due_date, data.customer_name, data.customer_email, data.customer_tax_id,
@@ -405,10 +405,10 @@ export async function insertDraftInvoice(tx: Queryable, data: InsertDraftInvoice
 
   for (const item of data.items) {
     await tx.query(
-      \`INSERT INTO invoice_items (
+      `INSERT INTO invoice_items (
         invoice_id, subscription_item_id, product_id, description, quantity, unit_price,
         line_subtotal, discount_amount, taxable_amount, tax_name, tax_rate, tax_amount, line_total
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         invoiceId, item.subscription_item_id, item.product_id, item.description, item.quantity, item.unit_price,
         item.line_subtotal, item.discount_amount, item.taxable_amount, item.tax_name, item.tax_rate,
@@ -419,8 +419,8 @@ export async function insertDraftInvoice(tx: Queryable, data: InsertDraftInvoice
 
   for (const tax of data.tax_details) {
     await tx.query(
-      \`INSERT INTO invoice_tax_details (invoice_id, tax_name, tax_rate, taxable_amount, tax_amount)
-       VALUES ($1, $2, $3, $4, $5)\`,
+      `INSERT INTO invoice_tax_details (invoice_id, tax_name, tax_rate, taxable_amount, tax_amount)
+       VALUES ($1, $2, $3, $4, $5)`,
       [invoiceId, tax.tax_name, tax.tax_rate, tax.taxable_amount, tax.tax_amount]
     )
   }
