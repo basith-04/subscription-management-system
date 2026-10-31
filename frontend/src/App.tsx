@@ -99,7 +99,7 @@ function App() {
           <div>
             <h2>API status</h2>
             <p className="muted">
-              The frontend talks to the Go API through the Vite proxy at{' '}
+              The frontend talks to the Node API through the Vite proxy at{' '}
               <code>/api/v1</code>.
             </p>
           </div>

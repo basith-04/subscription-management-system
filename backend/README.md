@@ -110,6 +110,51 @@ and date rules in the [API specification](../docs/api/api-specification.md).
 | `npm run typecheck` | Type-check source and tests |
 | `npm run lint` | Run Oxlint |
 
+## Node.js and Bun
+
+The API runs on either runtime; both lockfiles (`package-lock.json` and
+`bun.lock`) are committed.
+
+| Task | Node.js | Bun |
+|---|---|---|
+| Install | `npm install` | `bun install` |
+| Dev (watch) | `npm run dev` | `bun run dev:bun` |
+| Run TypeScript directly | — | `bun run start:bun` |
+| Build | `npm run build` | `bun run build:bun` |
+| Test | `npm test` | `bun run test` |
+| Lint | `npm run lint` | `bun run lint` |
+
+The Bun production path runs `bun src/index.ts` directly, so no compile step is
+required. The Node path compiles to `dist/` and runs `node dist/index.js`.
+
+## Docker
+
+The `Dockerfile` has two targets:
+
+```bash
+# Node.js (compiled, production dependencies only)
+docker build --target node -t brightloop-api:node .
+
+# Bun (runs TypeScript directly)
+docker build --target bun -t brightloop-api:bun .
+```
+
+Run either image:
+
+```bash
+docker run --rm -p 4000:4000 -e APP_ENV=production brightloop-api:node
+```
+
+Or use the repository-level Compose file:
+
+```bash
+docker compose up --build          # Node.js
+RUNTIME=bun docker compose up --build
+```
+
+The container listens on `0.0.0.0:4000` and exposes `GET /healthz` for health
+checks.
+
 ## Documentation
 
 - [System architecture](../docs/architecture/system-architecture.md)

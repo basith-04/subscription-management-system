@@ -22,22 +22,27 @@ Do not silently invent a different contract.
 
 ## Stack and constraints
 
-- Node.js 20.19+, TypeScript, Express 5. The architecture docs specify a
-  Node/Express modular monolith; keep it that way.
+- Node.js 20.19+ or Bun 1.x, TypeScript, Express 5. The architecture docs
+  specify a Node/Express modular monolith; keep it that way.
 - ES modules (`"type": "module"`). Relative imports must include the `.js`
   extension, even in `.ts` files.
+- Both `package-lock.json` (npm) and `bun.lock` (Bun) are committed. Keep them
+  in sync when dependencies change: run `npm install` and `bun install`.
 - PostgreSQL is the primary database. Do not substitute another database
   without a documented decision.
 - Validate request bodies and query parameters with Zod. Keep schemas next to
   the feature that owns them.
-- Keep the service runnable with `npm run dev` and no external services for the
-  base scaffold.
+- Keep the service runnable with `npm run dev` (or `bun run dev:bun`) and no
+  external services for the base scaffold.
 - No secrets in the repository. Configuration comes from environment variables
   through `src/config.ts`.
+- Docker: `Dockerfile` exposes `node` and `bun` targets. `docker-compose.yml`
+  selects one via `RUNTIME=node|bun`. Keep both targets working.
 
 ## Commands
 
 ```bash
+# Node.js
 npm install
 npm run dev        # tsx watch src/index.ts
 npm run build      # tsc -p tsconfig.json
@@ -45,10 +50,26 @@ npm start          # node dist/index.js
 npm test           # vitest run
 npm run typecheck  # tsc --noEmit -p tsconfig.test.json
 npm run lint       # oxlint src tests
+
+# Bun
+bun install
+bun run dev:bun    # bun --watch src/index.ts
+bun run start:bun  # bun src/index.ts
+bun run build:bun  # bun build src/index.ts
+bun run test
+bun run typecheck
+bun run lint
 ```
 
-Always run `npm run lint`, `npm run typecheck`, and `npm test` after changes.
-Add or update tests for new behaviour.
+Always run lint, typecheck, and tests under both runtimes when practical (CI
+does this). Add or update tests for new behaviour.
+
+Docker:
+
+```bash
+docker build --target node -t brightloop-api:node .
+docker build --target bun  -t brightloop-api:bun  .
+```
 
 ## Layout rules
 

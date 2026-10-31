@@ -47,6 +47,42 @@ rest of the page still renders.
 | `npm run lint` | Run Oxlint |
 | `npm run preview` | Serve the production build locally |
 
+## Node.js and Bun
+
+Both package managers are supported and both lockfiles (`package-lock.json` and
+`bun.lock`) are committed.
+
+| Task | Node.js | Bun |
+|---|---|---|
+| Install | `npm install` | `bun install` |
+| Dev | `npm run dev` | `bun run dev` |
+| Build | `npm run build` | `bun run build` |
+| Lint | `npm run lint` | `bun run lint` |
+
+## Docker
+
+The `Dockerfile` has two build targets, both served by nginx:
+
+```bash
+# Build with Node.js
+docker build --target node -t brightloop-web:node .
+
+# Build with Bun
+docker build --target bun -t brightloop-web:bun .
+```
+
+Or use the repository-level Compose file:
+
+```bash
+docker compose up --build          # Node.js
+RUNTIME=bun docker compose up --build
+```
+
+The nginx container serves the SPA on port `80`, falls back to `index.html` for
+client-side routes, and proxies `/api/` to `http://api:4000`. In Compose the
+backend service is named `api`; outside Compose, provide a network alias or
+adjust [`nginx.conf`](nginx.conf).
+
 ## Configuration
 
 | Variable | Default | Purpose |

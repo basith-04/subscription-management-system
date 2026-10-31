@@ -24,25 +24,46 @@ If the UI needs data or behaviour the API spec does not define, update the spec
 - React 19 + TypeScript + Vite.
 - Plain CSS for now. Do not add a UI framework or state manager without a
   documented decision.
-- Node `>=20.19`.
-- The app talks to the Go API at `/api/v1`; Vite proxies `/api` to
+- Node `>=20.19` or Bun 1.x.
+- Both `package-lock.json` (npm) and `bun.lock` (Bun) are committed. Keep them
+  in sync when dependencies change: run `npm install` and `bun install`.
+- The app talks to the Node.js API at `/api/v1`; Vite proxies `/api` to
   `http://localhost:4000` in development.
 - Authentication uses an `httpOnly` session cookie. Never read or store tokens
   in JavaScript-accessible storage.
+- Docker: `Dockerfile` exposes `node` and `bun` build targets, both served by
+  nginx. `docker-compose.yml` selects one via `RUNTIME=node|bun`.
 
 ## Commands
 
 ```bash
+# Node.js
 npm install
 npm run dev        # Vite dev server on :5173
 npm run build      # tsc -b && vite build
 npm run typecheck  # tsc -b
 npm run lint       # oxlint
 npm run preview    # serve dist/
+
+# Bun
+bun install
+bun run dev
+bun run build
+bun run typecheck
+bun run lint
+bun run preview
 ```
 
-Run `npm run lint`, `npm run typecheck`, and `npm run build` after changes.
-There is no test runner yet; add Vitest when component/unit tests are needed.
+Run lint, typecheck, and build under both runtimes when practical (CI does
+this). There is no test runner yet; add Vitest when component/unit tests are
+needed.
+
+Docker:
+
+```bash
+docker build --target node -t brightloop-web:node .
+docker build --target bun  -t brightloop-web:bun  .
+```
 
 ## Layout rules
 
@@ -52,6 +73,7 @@ There is no test runner yet; add Vitest when component/unit tests are needed.
   modules.
 - `src/App.tsx` — top-level composition and routing.
 - `src/index.css` — global reset/tokens; `App.css` — page-level styles.
+- `nginx.conf` — production static serving, SPA fallback, and `/api/` proxy.
 - Prefer colocating a component's CSS with the feature as the app grows.
 - Use the `@/` import alias only if it is configured in both `vite.config.ts`
   and `tsconfig.app.json`; otherwise use relative imports.

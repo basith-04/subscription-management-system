@@ -28,7 +28,7 @@ This project is developed by:
 
 ## Documentation
 
-Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design. The application is at the **scaffold stage**: the Go API and React frontend have their base structure, but the business features are not implemented yet.
+Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design. The application is at the **scaffold stage**: the Node.js API and React frontend have their base structure, but the business features are not implemented yet.
 
 | Document | Description |
 |---|---|
@@ -64,3 +64,62 @@ cd frontend
 npm install
 npm run dev
 ```
+
+### Node.js or Bun
+
+Both apps support npm and Bun; lockfiles for both package managers are committed.
+Pick one runtime per app.
+
+| Task | Node.js | Bun |
+|---|---|---|
+| Install | `npm install` | `bun install` |
+| Dev | `npm run dev` | `bun run dev` |
+| Test | `npm test` | `bun run test` |
+| Build | `npm run build` | `bun run build` |
+
+The backend also has explicit Bun scripts: `bun run dev:bun` (watch) and
+`bun run start:bun` (run TypeScript directly).
+
+## Docker
+
+Prerequisites: Docker Engine with Compose v2.
+
+```bash
+docker compose up --build
+# web  → http://localhost:8080
+# api  → http://localhost:4000
+```
+
+Node.js is the default runtime. To build and run the Bun variants instead:
+
+```bash
+RUNTIME=bun docker compose up --build
+```
+
+Both Dockerfiles are multi-target:
+
+| Image | `node` target | `bun` target |
+|---|---|---|
+| `backend` | Compiles TypeScript, runs `node dist/index.js` | Runs `bun src/index.ts` directly |
+| `frontend` | Vite build via npm, served by nginx | Vite build via Bun, served by nginx |
+
+Build a single image:
+
+```bash
+docker build --target node -t brightloop-api:node ./backend
+docker build --target bun  -t brightloop-api:bun  ./backend
+docker build --target node -t brightloop-web:node ./frontend
+docker build --target bun  -t brightloop-web:bun  ./frontend
+```
+
+Compose can be configured with environment variables or a root `.env` (see
+[`.env.example`](.env.example)): `RUNTIME`, `API_PORT`, `WEB_PORT`, and
+`ALLOWED_ORIGINS`. The web container proxies `/api/` to `http://api:4000`, so
+keep the Compose service name `api` (or add a network alias) when deploying
+outside Compose.
+
+## CI
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint, type-check,
+tests, and builds for **both Node.js and Bun**, then builds both Docker targets
+for each runtime.
