@@ -5,6 +5,8 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
+import { runMigrations } from '../../db/migrate.js'
+import { runReferenceSeeds } from '../../db/seed.js'
 
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL
 
@@ -45,6 +47,7 @@ export async function createPlanTestDb(): Promise<PlanTestDb> {
   const schema = `f07_test_${process.pid}_${Date.now()}`
   const setup = new pg.Client({ connectionString: base })
   await setup.connect()
+  await setup.query('CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public')
   await setup.query(`CREATE SCHEMA ${schema}`)
   await setup.query(`SET search_path TO ${schema}`)
   await setup.query(STAND_INS)
@@ -53,11 +56,16 @@ export async function createPlanTestDb(): Promise<PlanTestDb> {
   await setup.end()
 
   const url = new URL(base)
-  url.searchParams.set('options', `-c search_path=${schema}`)
+  // public contains the database-wide CITEXT extension, not fixture records.
+  url.searchParams.set('options', `-c search_path=${schema},public`)
   process.env.DATABASE_URL = url.toString()
-  process.env.DEMO_AUTH_ENABLED = 'true'
 
   const admin = new pg.Pool({ connectionString: url.toString() })
+  // Real F01 users replace the old header-based demo authentication fixture.
+  // Keep migration bookkeeping local even when public was already migrated.
+  await admin.query(`CREATE TABLE ${schema}.schema_migrations (name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`)
+  await runMigrations(admin, undefined, ['f00'])
+  await runReferenceSeeds(admin)
   return {
     admin,
     schema,

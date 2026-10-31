@@ -34,7 +34,8 @@ export async function canConnect(): Promise<boolean> {
 }
 
 export async function prepareDatabase(pool: Pool): Promise<void> {
-  await runMigrations(pool)
+  // F01 owns no schema beyond the F00 baseline. F07 is tested in its own schema.
+  await runMigrations(pool, undefined, ['f00'])
   await runReferenceSeeds(pool)
 }
 

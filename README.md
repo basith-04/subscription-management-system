@@ -60,7 +60,7 @@ Architecture and planning documents live in [`docs/`](docs/README.md). They desc
 cd backend
 cp .env.example .env      # adjust DATABASE_URL and JWT_SECRET if needed
 npm install
-npm run db:migrate        # create the F00 baseline schema
+npm run db:migrate -- --features=f00 # authentication baseline only; F07 awaits F06
 npm run db:seed           # roles (+ optional first admin from .env)
 npm run dev
 

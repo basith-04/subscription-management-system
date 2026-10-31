@@ -165,6 +165,10 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 
 ### 1.7 Database — `backend/db/`
 
+| File | Status | Owner | Purpose |
+|---|---|---|---|
+| `backend/db/migrate.test.ts` | EXISTING | F00/F01 | Explicit feature scoping and strict unscoped migration failure regression tests. |
+
 | Path | Status | Owner | Purpose | Notes |
 |---|---|---|---|---|
 | `schema.prisma` | SCAFFOLDED | F00 | Prisma schema — **only** if D-03 selects Prisma. | If D-03 lands on raw SQL, delete the file. Column-by-column must match [DB Design §4](../database/database-design.md). |

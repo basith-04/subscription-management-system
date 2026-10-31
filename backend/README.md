@@ -63,7 +63,7 @@ Start PostgreSQL, then prepare the database:
 cd backend
 cp .env.example .env
 npm install
-npm run db:migrate
+npm run db:migrate -- --features=f00
 npm run db:seed
 npm run dev
 ```
@@ -75,10 +75,19 @@ admin account (D-08). Both commands are idempotent.
 An optional initial staff account can similarly be created with `STAFF_EMAIL`
 and `STAFF_PASSWORD`; existing accounts are never overwritten.
 
+The explicit `--features=f00` scope prepares F01 authentication only. Without
+the flag, the runner applies **all** pending migrations and fails on unmet
+prerequisites. Main's F07 migration requires PostgreSQL 15+ and F06's `products`
+and `product_variants` tables, whose migration has not landed yet. Do not create
+fake production tables or mark F07 applied to bypass that prerequisite. The
+Compose migration image and CI authentication setup use the F00 scope until
+F06 lands; plans cannot be used on that auth-only database. F07 integration
+tests use explicitly documented test-only stand-ins in an isolated schema.
+
 For tests, create a separate database and point `TEST_DATABASE_URL` at it:
 
 ```bash
-createdb brightloop_test
+createdb brightloop_test # PostgreSQL 15+ for the combined F01/F07 suite
 TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/brightloop_test npm test
 ```
 

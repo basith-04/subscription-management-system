@@ -14,17 +14,12 @@ import {
   updatePlanBody,
 } from './plans.schemas.js'
 
-export const plansRouter = Router()
-
-plansRouter.use(authenticate)
-
 const read = requireRole('admin', 'staff')
 const write = requireRole('admin')
 
 /**
- * Query validation kept module-local: the shared `validate({ query })` assigns to `req.query`,
- * which is getter-only in Express 5 and throws. Parsed values go to `res.locals.query` instead.
- * TODO: remove once the shared middleware is fixed by its owner (F00).
+ * Parsed list values go to res.locals.query for the existing plans controller.
+ * Shared query validation also supports Express 5's getter-only req.query.
  */
 const parseListQuery: RequestHandler = (req, res, next) => {
   const result = listPlansQuery.safeParse(req.query)
@@ -36,14 +31,21 @@ const parseListQuery: RequestHandler = (req, res, next) => {
   next()
 }
 
-plansRouter.get('/', read, parseListQuery, controller.listPlans)
-plansRouter.post('/', write, validate({ body: createPlanBody }), controller.createPlan)
-plansRouter.get('/:id', read, validate({ params: planIdParams }), controller.getPlan)
-plansRouter.patch('/:id', write, validate({ params: planIdParams, body: updatePlanBody }), controller.updatePlan)
-plansRouter.put(
-  '/:id/products',
-  write,
-  validate({ params: planIdParams, body: replacePlanProductsBody }),
-  controller.replacePlanProducts,
-)
-plansRouter.delete('/:id', write, validate({ params: planIdParams }), controller.deletePlan)
+export function createPlansRouter(authenticateRequest: RequestHandler = authenticate): Router {
+  const router = Router()
+  router.use(authenticateRequest)
+  router.get('/', read, parseListQuery, controller.listPlans)
+  router.post('/', write, validate({ body: createPlanBody }), controller.createPlan)
+  router.get('/:id', read, validate({ params: planIdParams }), controller.getPlan)
+  router.patch('/:id', write, validate({ params: planIdParams, body: updatePlanBody }), controller.updatePlan)
+  router.put(
+    '/:id/products',
+    write,
+    validate({ params: planIdParams, body: replacePlanProductsBody }),
+    controller.replacePlanProducts,
+  )
+  router.delete('/:id', write, validate({ params: planIdParams }), controller.deletePlan)
+  return router
+}
+
+export const plansRouter = createPlansRouter()

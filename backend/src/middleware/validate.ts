@@ -27,7 +27,9 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
         req.body = schemas.body.parse(req.body)
       }
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query) as typeof req.query
+        // Express 5 exposes query as a getter; shadow it with the validated value.
+        const query = schemas.query.parse(req.query)
+        Object.defineProperty(req, 'query', { value: query, writable: true, configurable: true, enumerable: true })
       }
       if (schemas.params) {
         req.params = schemas.params.parse(req.params) as typeof req.params

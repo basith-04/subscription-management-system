@@ -2,7 +2,7 @@ import { Router, type RequestHandler } from 'express'
 import type { Config } from '../config.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
 import type { AuthService } from '../modules/auth/auth.service.js'
-import { plansRouter } from '../modules/plans/plans.routes.js'
+import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
 import { VERSION } from '../version.js'
 
@@ -47,8 +47,7 @@ export function createApiRouter({
     '/auth',
     createAuthRouter({ service: authService, config, authenticate }),
   )
-
-  router.use('/plans', plansRouter)
+  router.use('/plans', createPlansRouter(authenticate))
   router.use('/products', productsRouter)
   router.use('/variants', variantsRouter)
 

@@ -85,10 +85,10 @@ jobs:
       - name: Migrate and seed
         run: |
           if [ "${{ matrix.runtime }}" = "node" ]; then
-            npm run db:migrate
+            npm run db:migrate -- --features=f00
             npm run db:seed
           else
-            bun run db:migrate:bun
+            bun run db:migrate:bun --features=f00
             bun run db:seed:bun
           fi
 
