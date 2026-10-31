@@ -5,11 +5,12 @@ import type { AuthService } from '../modules/auth/auth.service.js'
 import { createCustomersRouter, createMeRouter } from '../modules/customers/customers.routes.js'
 import { createInvoicesRouter } from '../modules/invoices/invoices.routes.js'
 import { createInvoicePaymentsRouter, createPaymentsRouter } from '../modules/payments/payments.routes.js'
+import { createQuotationsRouter, createSubscriptionsRouter } from '../modules/subscriptions/subscriptions.routes.js'
 import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
-import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
-import { taxesRouter } from '../modules/taxes/index.js'
-import { paymentTermsRouter } from '../modules/payment-terms/index.js'
+import { createProductsRouter, createVariantsRouter } from '../modules/products/products.routes.js'
+import { createTaxesRouter } from '../modules/taxes/index.js'
+import { createPaymentTermsRouter } from '../modules/payment-terms/index.js'
 import { VERSION } from '../version.js'
 import { createBillingRunsRouter } from '../modules/billing-runs/index.js'
 import { createAuditLogsRouter } from '../modules/audit-logs/index.js'
@@ -63,11 +64,11 @@ export function createApiRouter({
   router.use('/invoices', createInvoicesRouter(authenticate, config))
   router.use('/invoices', createInvoicePaymentsRouter(authenticate))
   router.use('/payments', createPaymentsRouter(authenticate))
-  router.use('/products', productsRouter)
-  router.use('/variants', variantsRouter)
+  router.use('/products', createProductsRouter(authenticate))
+  router.use('/variants', createVariantsRouter(authenticate))
   router.use('/users', usersRouter)
-  router.use('/taxes', taxesRouter)
-  router.use('/payment-terms', paymentTermsRouter)
+  router.use('/taxes', createTaxesRouter(authenticate))
+  router.use('/payment-terms', createPaymentTermsRouter(authenticate))
 
   return router
 }

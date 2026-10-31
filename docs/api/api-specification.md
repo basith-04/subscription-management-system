@@ -1,6 +1,6 @@
 # API Specification (Contract Draft)
 
-> **Status:** Draft contract. **F01 authentication, F03 (Staff) and F06 (Products & variants)** endpoints are implemented. Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
+> **Status:** Draft contract. **F01 (Auth), F03 (Staff), F04 (Customers), F05 (Taxes/Terms), F06 (Products), F07 (Plans), F11 (Invoices), and F12 (Billing runs)** endpoints are implemented. Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
 > Related: [Database Design](../database/database-design.md) · [State Machines](../architecture/state-machines.md) · [Billing Engine](../architecture/billing-engine.md) · [Security & RBAC](../architecture/security-and-rbac.md)
 
 ## 1. Conventions
@@ -287,6 +287,13 @@ Staff/Admin see all. A customer sees only their own through `/me/subscriptions` 
 | DELETE | `/taxes/:id` | Delete unused tax | A | — | `204` | — | 409 `IN_USE` |
 | GET | `/payment-terms` | List terms | A, S | — | list | — | — |
 | POST / PATCH | `/payment-terms`, `/payment-terms/:id` | Create / update (`name`, `due_days`, `is_active`) | A | body | term | `due_days ≥ 0` | 409 |
+
+**F05 persistence:** tax rules and payment terms are read and written in
+PostgreSQL. Mutations and their audit records share a transaction. F05 API
+name checks are case-insensitive; database exact-name constraints remain the
+last guard against identical concurrent names. Reference data must be seeded
+after applying the F05 migration. Records from the former process-local store
+are not automatically transferred when switching to PostgreSQL.
 
 ---
 

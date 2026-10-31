@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import { Router, type RequestHandler } from 'express'
 import { authenticate } from '../../middleware/authenticate.js'
 import { requirePermission } from '../../middleware/rbac.js'
 import { validate } from '../../middleware/validate.js'
@@ -10,36 +10,44 @@ import {
   paymentTermIdParamSchema,
 } from './payment-terms.schemas.js'
 
-export const paymentTermsRouter = Router()
+export function createPaymentTermsRouter(
+  authenticateRequest: RequestHandler = authenticate,
+): Router {
+  const paymentTermsRouter = Router()
 
-paymentTermsRouter.get(
-  '/',
-  authenticate,
-  requirePermission('payment_terms:read'),
-  validate({ query: paymentTermQuerySchema }),
-  paymentTermsController.list,
-)
+  paymentTermsRouter.get(
+    '/',
+    authenticateRequest,
+    requirePermission('payment_terms:read'),
+    validate({ query: paymentTermQuerySchema }),
+    paymentTermsController.list,
+  )
 
-paymentTermsRouter.get(
-  '/:id',
-  authenticate,
-  requirePermission('payment_terms:read'),
-  validate({ params: paymentTermIdParamSchema }),
-  paymentTermsController.get,
-)
+  paymentTermsRouter.get(
+    '/:id',
+    authenticateRequest,
+    requirePermission('payment_terms:read'),
+    validate({ params: paymentTermIdParamSchema }),
+    paymentTermsController.get,
+  )
 
-paymentTermsRouter.post(
-  '/',
-  authenticate,
-  requirePermission('payment_terms:manage'),
-  validate({ body: createPaymentTermSchema }),
-  paymentTermsController.create,
-)
+  paymentTermsRouter.post(
+    '/',
+    authenticateRequest,
+    requirePermission('payment_terms:manage'),
+    validate({ body: createPaymentTermSchema }),
+    paymentTermsController.create,
+  )
 
-paymentTermsRouter.patch(
-  '/:id',
-  authenticate,
-  requirePermission('payment_terms:manage'),
-  validate({ params: paymentTermIdParamSchema, body: updatePaymentTermSchema }),
-  paymentTermsController.update,
-)
+  paymentTermsRouter.patch(
+    '/:id',
+    authenticateRequest,
+    requirePermission('payment_terms:manage'),
+    validate({ params: paymentTermIdParamSchema, body: updatePaymentTermSchema }),
+    paymentTermsController.update,
+  )
+
+  return paymentTermsRouter
+}
+
+export const paymentTermsRouter = createPaymentTermsRouter()

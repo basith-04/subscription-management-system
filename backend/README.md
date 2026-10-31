@@ -1,5 +1,10 @@
 # Brightloop API (backend)
 
+Tax and payment-term API writes use PostgreSQL and write audit records in the
+same transaction. Apply F00 and F05 migrations and reference seeds before
+using these endpoints; tests that exercise them require an isolated
+`TEST_DATABASE_URL`.
+
 Node.js + [Express](https://expressjs.com/) + TypeScript HTTP API for the
 Brightloop Subscription Management System.
 
@@ -116,6 +121,7 @@ curl http://localhost:4000/api/v1/health
 | Variable | Default | Purpose |
 |---|---|---|
 | `APP_ENV` | `development` | Runtime environment (`development`, `test`, `production`) |
+| `APP_TIMEZONE` | `Asia/Kolkata` | Business-day timezone for date-dependent rules |
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `4000` | HTTP port |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated CORS origins; `*` is rejected |
