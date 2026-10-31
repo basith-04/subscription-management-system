@@ -18,6 +18,11 @@ export function createAuthRouter({
   authenticate,
 }: AuthRouterDependencies): Router {
   const router = Router()
+  // Authentication responses and identities must not be stored in shared caches.
+  router.use((_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store')
+    next()
+  })
   const controller = createAuthController({ service, config })
   const rateLimiter = createAuthRateLimiter(config)
 

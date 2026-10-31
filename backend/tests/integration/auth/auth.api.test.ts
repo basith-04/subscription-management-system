@@ -74,6 +74,7 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
         .send(registration)
 
       expect(response.status).toBe(201)
+      expect(response.headers['cache-control']).toBe('no-store')
       expect(response.body.data).toMatchObject({
         user: {
           email: 'customer@example.com',
@@ -236,6 +237,7 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
         .send({ email: ' Login@Example.com ', password: 'Example!Pass123' })
 
       expect(response.status).toBe(200)
+      expect(response.headers['cache-control']).toBe('no-store')
       expect(response.body.data).toMatchObject({
         id: user.id,
         email: 'login@example.com',
