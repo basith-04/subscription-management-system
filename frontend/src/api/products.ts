@@ -1,10 +1,6 @@
 import { apiRequest } from '../lib/api'
 import type { Product, ProductVariant, PageMeta } from '../features/products/types'
 
-const demoHeaders: Record<string, string> = {}
-if (import.meta.env.VITE_DEMO_USER_ID) demoHeaders['X-User-Id'] = String(import.meta.env.VITE_DEMO_USER_ID)
-if (import.meta.env.VITE_DEMO_USER_ROLE) demoHeaders['X-User-Role'] = String(import.meta.env.VITE_DEMO_USER_ROLE)
-
 export interface ListProductsParams { q?: string; product_type?: string; is_active?: boolean; sort?: string; page?: number; page_size?: number }
 export interface ListResponse<T> { data: T[]; meta: PageMeta }
 
@@ -16,23 +12,23 @@ export function listProducts(params: ListProductsParams = {}): Promise<ListRespo
   if (params.sort) qs.set('sort', params.sort)
   if (params.page) qs.set('page', String(params.page))
   if (params.page_size) qs.set('page_size', String(params.page_size))
-  return apiRequest<ListResponse<Product>>(`/products?${qs.toString()}`, { raw: true, headers: demoHeaders })
+  return apiRequest<ListResponse<Product>>(`/products?${qs.toString()}`, { raw: true })
 }
 
 export function getProduct(id: number): Promise<Product> {
-  return apiRequest<Product>(`/products/${id}`, { headers: demoHeaders })
+  return apiRequest<Product>(`/products/${id}`)
 }
 
 export interface CreateProductInput { name: string; product_type: 'service' | 'software' | 'addon' | 'physical'; sales_price: string; cost_price: string; notes?: string }
 export function createProduct(input: CreateProductInput): Promise<Product> {
-  return apiRequest<Product>('/products', { method: 'POST', body: JSON.stringify(input), headers: demoHeaders })
+  return apiRequest<Product>('/products', { method: 'POST', body: JSON.stringify(input) })
 }
 
 export function listVariants(productId: number): Promise<ProductVariant[]> {
-  return apiRequest<ProductVariant[]>(`/products/${productId}/variants`, { headers: demoHeaders })
+  return apiRequest<ProductVariant[]>(`/products/${productId}/variants`)
 }
 
 export interface CreateVariantInput { attribute_name: string; attribute_value: string; price_adjustment: string }
 export function addVariant(productId: number, input: CreateVariantInput): Promise<ProductVariant> {
-  return apiRequest<ProductVariant>(`/products/${productId}/variants`, { method: 'POST', body: JSON.stringify(input), headers: demoHeaders })
+  return apiRequest<ProductVariant>(`/products/${productId}/variants`, { method: 'POST', body: JSON.stringify(input) })
 }
