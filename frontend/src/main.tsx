@@ -14,6 +14,7 @@ import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './featu
 import { PaymentListRoute } from './features/payments'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
+import { TemplateFormPage, TemplateListPage } from './features/quotation-templates'
 
 const queryClient = new QueryClient()
 
@@ -41,8 +42,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
             <Route path="payments" element={<PaymentListRoute />} />
             <Route path="products" element={<ProductListRoute />} />
+            <Route path="quotation-templates" element={<TemplateListPage />} />
+            <Route path="quotation-templates/:id" element={<TemplateFormPage />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />
+              <Route path="quotation-templates/new" element={<TemplateFormPage />} />
             </Route>
             <Route path="products/:id" element={<ProductDetailRoute />} />
           </Route>

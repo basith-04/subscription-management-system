@@ -238,6 +238,24 @@ Every plans endpoint returns the same plan object; `GET /plans/:id`, `POST` and 
 | PATCH | `/quotation-templates/:id` | Update (replaces `items` if provided) | A | subset | template | as create | — |
 | DELETE | `/quotation-templates/:id` | Delete (existing quotations unaffected: lines were copied) | A | — | `204` | — | — |
 
+**F08 implementation and integration status:** `DELETE` deactivates the template
+(`is_active=false`) under D-10; it does not hard-delete rows. Lists return plan
+names and pagination metadata; detail includes plan/term active flags and item
+product, variant, tax, `effective_price` and `sort_order`. `PATCH` replaces the
+item array atomically only when supplied. Template creation and item replacement
+validate active references against PostgreSQL. The service export
+`getTemplateForUse(id, db?)` returns this detail with each item's resolved
+`unit_price` (override or F06 effective price); F09 should pass its transaction,
+enforce plan availability and minimum quantity, then snapshot the copied lines.
+Inactive templates or references are rejected at use time.
+
+**Not ready for integration:** the existing F05 tax/payment-term APIs use an
+in-memory store rather than the PostgreSQL tables used by F08. The existing
+unscoped migration chain also has duplicate identity baselines and sorts F07
+before F06. These prerequisites must be resolved before an end-to-end F08/F09
+walkthrough can be considered complete. Editor route-leave guarding and full
+F08 frontend/F09 integration coverage also remain to be completed.
+
 ### 7.2 Quotations
 A quotation is a subscription in `draft`/`quotation` status. These endpoints are convenient aliases for sales reps and use the subscription service ([State Machines](../architecture/state-machines.md)).
 

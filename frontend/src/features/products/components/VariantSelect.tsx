@@ -11,7 +11,7 @@ export function VariantSelect({ productId, value, onChange, disabled = false, pl
   return (
     <select value={value ?? ''} disabled={disabled || !productId} onChange={(e) => { const next = e.target.value ? Number(e.target.value) : null; onChange(next, variants.find((v) => v.id === next) ?? null) }} style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2ded4', borderRadius: 8, minWidth: 200 }}>
       <option value="">{placeholder}</option>
-      {variants.map((v) => <option key={v.id} value={v.id}>{v.attribute_name}: {v.attribute_value} ({v.price_adjustment})</option>)}
+      {variants.filter((v) => v.is_active || v.id === value).map((v) => <option key={v.id} value={v.id} disabled={!v.is_active}>{v.attribute_name}: {v.attribute_value} ({v.price_adjustment}){!v.is_active ? ' — inactive' : ''}</option>)}
     </select>
   )
 }

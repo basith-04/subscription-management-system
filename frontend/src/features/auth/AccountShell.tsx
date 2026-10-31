@@ -35,6 +35,7 @@ export function AccountShell({ area }: { area: 'portal' | 'app' }) {
         <Link to="/app/invoices">Invoices</Link>
         <Link to="/app/payments">Payments</Link>
         <Link to="/app/products">Products</Link>
+        <Link to="/app/quotation-templates">Quotation templates</Link>
       </nav>}
       {area === 'portal' && <p><Link to="/portal/profile">My profile</Link></p>}
       {warnings?.map((warning) => <p key={`${warning.field}:${warning.message}`} role="status">{warning.message}</p>)}
