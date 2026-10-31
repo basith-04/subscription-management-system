@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { addVariant } from '../../../api/products'
 import { formatMoney } from '../../../lib/money'
+import { useAuth } from '../../auth/useAuth'
 import type { Product } from '../types'
 
 export function VariantsPanel({ product, onVariantsChanged }: { product: Product; onVariantsChanged: () => void }) {
+  const { user } = useAuth()
   const [attributeName, setAttributeName] = useState('')
   const [attributeValue, setAttributeValue] = useState('')
   const [adjustment, setAdjustment] = useState('0.00')
@@ -43,7 +45,7 @@ export function VariantsPanel({ product, onVariantsChanged }: { product: Product
           </tbody>
         </table>
       )}
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      {user?.role === 'admin' && <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <span style={{ fontSize: '0.8rem', color: '#6b675f' }}>Attribute</span>
           <input required value={attributeName} onChange={(e) => setAttributeName(e.target.value)} placeholder="Brand" style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2ded4', borderRadius: 8 }} />
@@ -57,7 +59,7 @@ export function VariantsPanel({ product, onVariantsChanged }: { product: Product
           <input required value={adjustment} onChange={(e) => setAdjustment(e.target.value)} placeholder="560.00" pattern="^-?\d{1,10}(\.\d{1,2})?$" style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2ded4', borderRadius: 8, width: 100 }} />
         </label>
         <button type="submit" disabled={submitting} className="button primary">{submitting ? 'Adding…' : 'Add variant'}</button>
-      </form>
+      </form>}
       {error && <p style={{ color: '#a33030', marginTop: '0.5rem' }}>{error}</p>}
     </section>
   )

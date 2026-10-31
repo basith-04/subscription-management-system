@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getHealth, type Health } from './lib/api'
 import './App.css'
 
@@ -32,11 +33,10 @@ function LandingPage() {
           <span className="brand-mark" aria-hidden="true">B</span><span>Brightloop</span>
         </a>
         <nav className="nav" aria-label="Main navigation">
-          <a href="/app/products">Products</a>
+          <Link to="/app/products">Products</Link>
           <a href="#status">Status</a>
-          <a href="/login">Sign in</a>
-          <a href="/register">Register</a>
-          <a href="/docs/api/api-specification.md">API docs</a>
+          <Link to="/login">Sign in</Link>
+          <Link to="/register">Register</Link>
         </nav>
       </header>
       <main>
@@ -45,7 +45,7 @@ function LandingPage() {
           <h1>One platform for the whole subscription lifecycle.</h1>
           <p className="lede">Quote, subscribe, bill, collect, and report — without spreadsheets. Built for the Odoo x Make-A-Ton 9.0 Kochi Hackathon 2026.</p>
           <div className="hero-actions">
-            <a className="button primary" href="/app/products">Open catalogue</a>
+            <Link className="button primary" to="/app/products">Open catalogue</Link>
           </div>
         </section>
         <section className="section">
