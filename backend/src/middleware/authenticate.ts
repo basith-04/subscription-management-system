@@ -1,12 +1,21 @@
-import type { Request, Response, NextFunction } from 'express'
-import type { Role } from '../config/permissions.js'
+// Session / Token authentication.
+// TEMPORARY: while F01 is in progress, this reads X-User-Id / X-User-Role headers
+// or Authorization Bearer tokens.
+import type { Request, Response, NextFunction, RequestHandler } from 'express'
+import { ApiError } from './error-handler.js'
+import type { Role } from './require-role.js'
+
+export type { Role }
 
 export interface AuthenticatedUser {
-  id: string
+  id: number | string
   email: string
   fullName: string
   role: Role
+  customerId?: number
 }
+
+export type AuthenticatedRequestUser = AuthenticatedUser
 
 declare global {
   namespace Express {
@@ -16,20 +25,21 @@ declare global {
   }
 }
 
-export function authenticate(
+export const authenticate: RequestHandler = (
   req: Request,
   _res: Response,
   next: NextFunction,
-): void {
-  // Check for test/custom auth header or basic role simulation
-  const roleHeader = req.headers['x-user-role'] as Role | undefined
-  const idHeader = req.headers['x-user-id'] as string | undefined
+): void => {
+  // Check for test/custom auth header or demo role simulation
+  const roleHeader = (req.header('x-user-role') || req.headers['x-user-role']) as Role | undefined
+  const idHeader = req.header('x-user-id') || (req.headers['x-user-id'] as string | undefined)
   const emailHeader = req.headers['x-user-email'] as string | undefined
   const nameHeader = req.headers['x-user-name'] as string | undefined
 
   if (roleHeader && (roleHeader === 'admin' || roleHeader === 'staff' || roleHeader === 'customer')) {
+    const parsedId = idHeader ? (Number.isNaN(Number(idHeader)) ? idHeader : Number(idHeader)) : 1
     req.user = {
-      id: idHeader ?? 'user_1',
+      id: parsedId,
       email: emailHeader ?? `${roleHeader}@brightloop.io`,
       fullName: nameHeader ?? `${roleHeader.toUpperCase()} User`,
       role: roleHeader,
@@ -70,7 +80,6 @@ export function authenticate(
     }
   }
 
-  // Anonymous request
-  req.user = undefined
-  next()
+  // Not logged in
+  return next(new ApiError(401, 'UNAUTHORIZED', 'Not logged in'))
 }

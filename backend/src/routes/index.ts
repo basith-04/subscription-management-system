@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { VERSION } from '../version.js'
+import { plansRouter } from '../modules/plans/plans.routes.js'
 import { taxesRouter } from '../modules/taxes/index.js'
 import { paymentTermsRouter } from '../modules/payment-terms/index.js'
 
@@ -33,5 +34,6 @@ apiRouter.get('/health', (_req, res) => {
   res.json({ data: healthPayload() })
 })
 
+apiRouter.use('/plans', plansRouter)
 apiRouter.use('/taxes', taxesRouter)
 apiRouter.use('/payment-terms', paymentTermsRouter)

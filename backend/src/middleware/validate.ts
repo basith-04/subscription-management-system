@@ -1,18 +1,34 @@
+// Zod request validation — converts issues to 422 VALIDATION_ERROR with field details.
 import type { RequestHandler } from 'express'
-import { ZodError, type ZodSchema } from 'zod'
+import type { ZodType } from 'zod'
 import { ApiError, type FieldError } from './error-handler.js'
 
-export interface ValidateSchemas {
-  body?: ZodSchema
-  query?: ZodSchema
-  params?: ZodSchema
+export interface ValidationSpec {
+  body?: ZodType
+  params?: ZodType
+  query?: ZodType
 }
 
-export function validate(schemas: ValidateSchemas): RequestHandler {
-  return async (req, _res, next) => {
+export type ValidateSchemas = ValidationSpec
+
+interface ZodLikeError {
+  issues: Array<{ path: (string | number)[]; message: string }>
+}
+
+function isZodError(error: unknown): error is ZodLikeError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'issues' in error &&
+    Array.isArray((error as { issues: unknown }).issues)
+  )
+}
+
+export function validate(spec: ValidationSpec): RequestHandler {
+  return async (req, res, next) => {
     try {
-      if (schemas.params) {
-        const parsedParams = await schemas.params.parseAsync(req.params)
+      if (spec.params) {
+        const parsedParams = await spec.params.parseAsync(req.params)
         Object.defineProperty(req, 'params', {
           value: parsedParams,
           writable: true,
@@ -20,34 +36,29 @@ export function validate(schemas: ValidateSchemas): RequestHandler {
           configurable: true,
         })
       }
-      if (schemas.query) {
-        const parsedQuery = await schemas.query.parseAsync(req.query)
+      if (spec.query) {
+        const parsedQuery = await spec.query.parseAsync(req.query)
         Object.defineProperty(req, 'query', {
           value: parsedQuery,
           writable: true,
           enumerable: true,
           configurable: true,
         })
+        res.locals.query = parsedQuery
       }
-      if (schemas.body) {
-        req.body = await schemas.body.parseAsync(req.body)
+      if (spec.body) {
+        req.body = await spec.body.parseAsync(req.body)
       }
       next()
     } catch (error) {
-      if (error instanceof ZodError) {
+      if (isZodError(error)) {
         const details: FieldError[] = error.issues.map((issue) => ({
-          field: issue.path.join('.'),
+          field: issue.path.join('.') || '(root)',
           message: issue.message,
         }))
-        next(
-          new ApiError(
-            422,
-            'VALIDATION_ERROR',
-            'Validation failed',
-            details,
-          ),
+        return next(
+          new ApiError(422, 'VALIDATION_ERROR', 'Validation failed', details),
         )
-        return
       }
       next(error)
     }

@@ -1,0 +1,24 @@
+/* Plans feature styles — colocated per frontend/AGENTS.md. */
+.plans-page { max-width: 64rem; margin: 0 auto; padding: 1rem; }
+.plans-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.plans-actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem; }
+.plans-filters { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+.plans-filters label, .plans-form label { display: flex; flex-direction: column; gap: 0.25rem; }
+.plans-form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 36rem; }
+.plans-table { width: 100%; border-collapse: collapse; }
+.plans-table th, .plans-table td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #ddd; }
+.plans-link { background: none; border: 0; padding: 0; color: #0b5cad; text-decoration: underline; cursor: pointer; }
+.plans-pager { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
+.plans-policies { border: 1px solid #ddd; padding: 0.75rem; }
+.plans-toggle { display: flex; flex-direction: column; margin-bottom: 0.5rem; }
+.plans-toggle small { color: #555; margin-left: 1.5rem; }
+.plans-notice { background: #eef5ff; border-left: 4px solid #0b5cad; padding: 0.5rem 0.75rem; }
+.plans-warning { color: #8a5a00; }
+.plans-error { color: #b00020; }
+.plans-success { color: #1b6e2d; }
+.plans-empty { color: #555; font-style: italic; }
+.plans-badge { color: #8a5a00; font-size: 0.85em; }
+.plans-summary { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.plans-summary dt { font-weight: 600; }
+.plans-product-rows { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.plans-product-row { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 0.5rem; }
