@@ -49,6 +49,9 @@ describe('subscription request shapes', () => {
     expect(confirmQuotationBody.safeParse({ customer_id: 2 }).success).toBe(false)
     expect(cancelQuotationBody.safeParse({ reason: '  Changed mind  ' }).data?.reason).toBe('Changed mind')
     expect(cancelQuotationBody.safeParse({ reason: 'x'.repeat(501) }).success).toBe(false)
+    // action endpoints are callable without any request body
+    for (const schema of [issueQuotationBody, confirmQuotationBody, cancelQuotationBody]) expect(schema.safeParse(undefined).success).toBe(true)
+    expect(confirmQuotationBody.safeParse({ extra: 1 }).success).toBe(false)
     expect(cancelQuotationBody.safeParse({ closed_reason: 'expired' }).success).toBe(false)
   })
 

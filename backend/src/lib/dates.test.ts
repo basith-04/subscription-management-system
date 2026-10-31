@@ -24,3 +24,19 @@ describe('business dates', () => {
     expect(loadConfig({} as NodeJS.ProcessEnv).appTimezone).toBe('Asia/Kolkata')
   })
 })
+
+describe('business-date boundaries (D-22)', () => {
+  const instant = new Date('2026-11-10T18:29:59Z') // 23:59:59 on the 10th in Asia/Kolkata
+  it('rolls over at local midnight, not at UTC midnight', async () => {
+    const { todayInAppTimezone, todayInTimezone } = await import('./dates.js')
+    expect(todayInAppTimezone(instant, 'Asia/Kolkata')).toBe('2026-11-10')
+    expect(todayInAppTimezone(new Date(instant.getTime() + 1000), 'Asia/Kolkata')).toBe('2026-11-11')
+    expect(todayInAppTimezone(instant, 'UTC')).toBe('2026-11-10')
+    expect(todayInAppTimezone(new Date('2026-11-10T00:00:00Z'), 'America/Los_Angeles')).toBe('2026-11-09')
+  })
+  it('todayInAppTimezone is the same computation as todayInTimezone (single implementation)', async () => {
+    const { todayInAppTimezone, todayInTimezone } = await import('./dates.js')
+    for (const tz of ['Asia/Kolkata', 'UTC', 'Pacific/Auckland']) expect(todayInAppTimezone(instant, tz)).toBe(todayInTimezone(instant, tz))
+    expect(() => todayInAppTimezone(new Date(Number.NaN), 'UTC')).toThrow(RangeError)
+  })
+})

@@ -50,9 +50,12 @@ export const updateSubscriptionBody = z.object(fields).partial().strict().superR
   }
 })
 
-export const issueQuotationBody = z.object({ valid_until: date.optional() }).strict()
-export const confirmQuotationBody = z.object({}).strict()
-export const cancelQuotationBody = z.object({ reason: z.string().trim().max(500, 'Reason must be at most 500 characters').optional() }).strict()
+// Action endpoints may be called without a body (Express leaves req.body undefined), so default it to {}.
+const optionalBody = <T extends z.ZodType>(schema: T) => z.preprocess((value) => value ?? {}, schema)
+
+export const issueQuotationBody = optionalBody(z.object({ valid_until: date.optional() }).strict())
+export const confirmQuotationBody = optionalBody(z.object({}).strict())
+export const cancelQuotationBody = optionalBody(z.object({ reason: z.string().trim().max(500, 'Reason must be at most 500 characters').optional() }).strict())
 
 const queryText = z.string().trim().max(120).optional()
 const sortField = (allowed: readonly string[]) => z.string().refine(
