@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import { VERSION } from '../version.js'
+import { taxesRouter } from '../modules/taxes/index.js'
+import { paymentTermsRouter } from '../modules/payment-terms/index.js'
 
 export interface HealthPayload {
   status: string
@@ -30,3 +32,6 @@ apiRouter.get('/', (_req, res) => {
 apiRouter.get('/health', (_req, res) => {
   res.json({ data: healthPayload() })
 })
+
+apiRouter.use('/taxes', taxesRouter)
+apiRouter.use('/payment-terms', paymentTermsRouter)

@@ -1,1 +1,33 @@
-// Zod request schemas for payment-terms (body, params, query). PLACEHOLDER — replace with implementation.
+import { z } from 'zod'
+
+export const dueDaysSchema = z
+  .number()
+  .int('due_days must be an integer')
+  .min(0, 'due_days must be greater than or equal to 0')
+
+export const createPaymentTermSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(120, 'Name must be at most 120 characters'),
+  due_days: dueDaysSchema,
+  is_active: z.boolean().optional(),
+})
+
+export const updatePaymentTermSchema = z.object({
+  name: z.string().trim().min(1, 'Name cannot be empty').max(120, 'Name must be at most 120 characters').optional(),
+  due_days: dueDaysSchema.optional(),
+  is_active: z.boolean().optional(),
+})
+
+export const paymentTermQuerySchema = z.object({
+  is_active: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
+})
+
+export const paymentTermIdParamSchema = z.object({
+  id: z.string().min(1, 'ID is required'),
+})
+
+export type CreatePaymentTermInput = z.infer<typeof createPaymentTermSchema>
+export type UpdatePaymentTermInput = z.infer<typeof updatePaymentTermSchema>
+export type PaymentTermQueryInput = z.infer<typeof paymentTermQuerySchema>
