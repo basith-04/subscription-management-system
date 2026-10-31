@@ -24,6 +24,22 @@ export interface AuditLogPayload {
   new?: Record<string, unknown> | null
 }
 
+const SENSITIVE_KEY = /(password|passphrase|secret|token|cookie|authorization|credential|session)/i
+
+/**
+ * Removes credentials recursively before an audit value reaches persistence or
+ * a read API.  Keeping this here makes every producer and consumer follow the
+ * same contract; audit entries are business history, never a secret store.
+ */
+export function sanitizeAuditValues(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeAuditValues)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .map(([key, nested]) => [key, SENSITIVE_KEY.test(key) ? '[REDACTED]' : sanitizeAuditValues(nested)]))
+  }
+  return value
+}
+
 /**
  * Append an audit row using the caller's transaction/client. Callers must not
  * pass passwords, hashes, cookies, tokens or full request headers in values.
@@ -41,8 +57,8 @@ export async function writeAudit(
       entry.action,
       entry.entityType,
       entry.entityId,
-      entry.oldValues === undefined ? null : JSON.stringify(entry.oldValues),
-      entry.newValues === undefined ? null : JSON.stringify(entry.newValues),
+      entry.oldValues === undefined ? null : JSON.stringify(sanitizeAuditValues(entry.oldValues)),
+      entry.newValues === undefined ? null : JSON.stringify(sanitizeAuditValues(entry.newValues)),
       entry.ipAddress ?? null,
     ],
   )
@@ -55,8 +71,8 @@ export const audit = {
       action: payload.action,
       entity_type: payload.entityType,
       entity_id: payload.entityId,
-      old_state: payload.old ?? null,
-      new_state: payload.new ?? null,
+      old_state: payload.old === null || payload.old === undefined ? null : sanitizeAuditValues(payload.old) as Record<string, unknown>,
+      new_state: payload.new === null || payload.new === undefined ? null : sanitizeAuditValues(payload.new) as Record<string, unknown>,
     })
   },
 }

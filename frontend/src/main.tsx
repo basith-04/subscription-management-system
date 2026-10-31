@@ -15,6 +15,7 @@ import { PaymentListRoute } from './features/payments'
 import { QuotationCreatePage, QuotationDetailPage, QuotationListPage, SubscriptionDetailPage, SubscriptionListPage } from './features/subscriptions'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
+import { AuditLogPage } from './features/audit-logs'
 import { PlanListRoute } from './features/plans/routes/PlanListRoute'
 import { TaxListPage } from './features/taxes'
 import { PaymentTermListPage } from './features/payment-terms'
@@ -66,6 +67,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="payment-terms" element={<PaymentTermListPage />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="users" element={<StaffListPage />} />
+              <Route path="settings/audit-log" element={<AuditLogPage />} />
             </Route>
           </Route>
         </Route>

@@ -15,7 +15,9 @@ const navigation = [
 
 function Workspace() {
   const { user } = useAuth()
-  const items = user?.role === 'admin' ? [...navigation, { to: '/app/users', label: 'Team', mark: '09' }] : navigation
+  const items = user?.role === 'admin'
+    ? [...navigation, { to: '/app/users', label: 'Team', mark: '09' }, { to: '/app/settings/audit-log', label: 'Audit log', mark: '10' }]
+    : navigation
 
   return <div className="workspace-shell">
     <aside className="workspace-rail">

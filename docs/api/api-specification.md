@@ -369,7 +369,19 @@ There is no `DELETE /payments/:id` and no `PATCH` of amounts: correct mistakes b
 
 ---
 
-## 13. Dashboard and reports
+## 13. Audit logs
+
+`GET /audit-logs` is an Admin-only, read-only audit-trail endpoint. It accepts
+`entity_type`, `entity_id`, `actor_user_id`, `action`, `date_from`, `date_to`,
+`page`, and `page_size` (default 20, maximum 100). Dates are ISO timestamps
+and `date_from` must not exceed `date_to`. Results are ordered
+`created_at DESC, id DESC`; paging is bounded to page 1000. The response uses
+the normal list envelope: `{ data: AuditLog[], meta }`. `actor: null` means a
+system event; a retained event whose user no longer resolves is labelled
+`Deleted user`. There are intentionally no create, update, or delete audit-log
+endpoints. Old/new values exclude credentials, tokens, cookies and sessions.
+
+## 14. Dashboard and reports
 
 All role **A, S** (finance lead is a Staff account). Every endpoint accepts `date_from`, `date_to` (default: current month) unless stated. Aggregation happens in SQL; responses are small and are designed to render in < 2 s with thousands of subscriptions.
 
@@ -388,7 +400,7 @@ Exporting to CSV (`?format=csv`) is a possible extra; OPEN QUESTION.
 
 ---
 
-## 14. Endpoint-to-role quick matrix
+## 15. Endpoint-to-role quick matrix
 
 | Area | Admin | Staff | Customer |
 |---|---|---|---|

@@ -13,6 +13,7 @@ import { createTaxesRouter } from '../modules/taxes/index.js'
 import { createPaymentTermsRouter } from '../modules/payment-terms/index.js'
 import { VERSION } from '../version.js'
 import { createBillingRunsRouter } from '../modules/billing-runs/index.js'
+import { createAuditLogsRouter } from '../modules/audit-logs/index.js'
 
 export interface HealthPayload {
   status: string
@@ -56,6 +57,7 @@ export function createApiRouter({
     createAuthRouter({ service: authService, config, authenticate }),
   )
   router.use('/billing', createBillingRunsRouter(authenticate))
+  router.use('/audit-logs', createAuditLogsRouter(authenticate))
   router.use('/customers', createCustomersRouter(authenticate))
   router.use('/me', createMeRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))

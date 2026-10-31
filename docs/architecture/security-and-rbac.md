@@ -118,7 +118,10 @@ Not-found vs forbidden: for a customer asking for another customer's record, res
 - Central error handler → consistent error envelope, request id, no internals leaked.
 - Every route is declared with its required role in one routing table (so a missing guard is visible in review). Default for a new route: **deny** unless a guard is declared.
 - Audit logging for: staff creation, role/active changes, product/plan/tax/discount changes, subscription transitions, invoice confirm/cancel, payments recorded/voided, manual billing runs, failed-login bursts.
-- Database account used by the app has no superuser rights; `audit_logs` is insert-only for that account.
+- Database account used by the app has no superuser rights; `audit_logs` has only
+  `INSERT` (the shared logger) and `SELECT` (the Admin-only viewer), never
+  `UPDATE` or `DELETE`. Audit payloads exclude passwords, password hashes,
+  reset/authentication tokens, cookies and session credentials.
 
 ## 8. Environment variables and secrets
 
