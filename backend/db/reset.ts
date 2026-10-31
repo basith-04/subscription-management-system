@@ -8,6 +8,7 @@ import { runReferenceSeeds, seedAdmin } from './seed.js'
  * database; it drops every table owned by this application.
  */
 async function main(): Promise<void> {
+  await import('dotenv/config')
   const config = loadConfig()
 
   if (config.isProduction) {

@@ -72,6 +72,7 @@ export async function seedAdmin(
 }
 
 async function main(): Promise<void> {
+  await import('dotenv/config')
   const config = loadConfig()
   const pool = createPool(config.databaseUrl)
 
