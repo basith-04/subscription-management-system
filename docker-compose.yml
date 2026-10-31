@@ -4,17 +4,71 @@ name: brightloop
 # Default: Node. Use Bun with:
 #   RUNTIME=bun docker compose up --build
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-brightloop}
+      POSTGRES_USER: ${POSTGRES_USER:-brightloop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-brightloop} -d ${POSTGRES_DB:-brightloop}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Runs once: applies migrations and the reference role seed, then exits.
+  migrate:
+    build:
+      context: ./backend
+      target: migrate
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgres://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-brightloop}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-Administrator}
+      STAFF_EMAIL: ${STAFF_EMAIL:-}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:-}
+      STAFF_FULL_NAME: ${STAFF_FULL_NAME:-Staff}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   api:
     build:
       context: ./backend
       target: ${RUNTIME:-node}
     environment:
-      APP_ENV: production
+      APP_ENV: ${APP_ENV:-development}
       HOST: 0.0.0.0
       PORT: 4000
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      DATABASE_URL: postgres://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-brightloop}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-8}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-brightloop_session}
+      # Local Compose serves plain HTTP. Set true behind HTTPS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-10}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
     ports:
       - "${API_PORT:-4000}:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4000/healthz"]
@@ -39,3 +93,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+
+volumes:
+  db-data:

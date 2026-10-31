@@ -9,7 +9,7 @@ export function requirePermission(permission: Permission): RequestHandler {
       return
     }
 
-    if (!hasPermission(req.user.role, permission)) {
+    if (!hasPermission(req.user.role as Role, permission)) {
       next(new ApiError(403, 'FORBIDDEN', 'Insufficient permissions'))
       return
     }
@@ -25,7 +25,7 @@ export function requireRole(...roles: Role[]): RequestHandler {
       return
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role as Role)) {
       next(new ApiError(403, 'FORBIDDEN', 'Insufficient permissions'))
       return
     }

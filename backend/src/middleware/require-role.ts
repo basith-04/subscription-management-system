@@ -1,22 +1,42 @@
-// Role gate — 403 FORBIDDEN when the logged-in user's role is not in the allowed list.
 import type { RequestHandler } from 'express'
-import { ApiError } from './error-handler.js'
+import { ApiError } from '../lib/errors.js'
+import { ERROR_CODES } from '../lib/error-codes.js'
 
 export type Role = 'admin' | 'staff' | 'customer'
-
 export interface AuthenticatedRequestUser {
   id: number
   role: Role
   customerId?: number
 }
 
-export function requireRole(...roles: Role[]): RequestHandler {
+/**
+ * Role gate for protected routes. The role comes from the database-backed
+ * session, never from the request body or a client-supplied claim.
+ */
+export function requireRole(...roles: string[]): RequestHandler {
   return (req, _res, next) => {
-    const user = (req as unknown as { user?: AuthenticatedRequestUser }).user
-    if (!user) return next(new ApiError(401, 'UNAUTHENTICATED', 'Not logged in'))
-    if (!roles.includes(user.role)) {
-      return next(new ApiError(403, 'FORBIDDEN', 'Insufficient permissions'))
+    if (!req.user) {
+      next(
+        new ApiError(
+          401,
+          ERROR_CODES.UNAUTHENTICATED,
+          'Authentication required',
+        ),
+      )
+      return
     }
+
+    if (!roles.includes(req.user.role)) {
+      next(
+        new ApiError(
+          403,
+          ERROR_CODES.FORBIDDEN,
+          'You do not have permission to perform this action',
+        ),
+      )
+      return
+    }
+
     next()
   }
 }

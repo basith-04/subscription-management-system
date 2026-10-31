@@ -14,7 +14,6 @@ interface Props extends PlanPageNav {
   planId: number
   slots?: ProductEditorSlots
 }
-
 const toDrafts = (products: PlanProduct[]): ProductRowDraft[] =>
   products.map((p) => ({
     key: newRowKey(),
@@ -143,4 +142,3 @@ function Detail({ plan, role, onNavigate, reload, slots }: PlanPageNav & { plan:
     </section>
   )
 }
-

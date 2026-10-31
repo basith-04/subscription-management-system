@@ -1,1 +1,7 @@
-// Public API of the auth module — exports service functions only. PLACEHOLDER — replace with implementation.
+export { createAuthService } from './auth.service.js'
+export type {
+  AuthService,
+  LoginResult,
+  RegisterResult,
+  SafeUser,
+} from './auth.service.js'

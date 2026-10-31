@@ -1,259 +1,129 @@
 import { useEffect, useState } from 'react'
-import { getHealth, type Health } from './lib/api.js'
-import { AuthProvider, useAuth, type Role } from './lib/auth-context.js'
-import { TaxListPage, TaxSelect } from './features/taxes/index.js'
-import { PaymentTermListPage, PaymentTermSelect } from './features/payment-terms/index.js'
+import { getHealth, type Health } from './lib/api'
+import { ProductListPage, ProductDetailPage, ProductFormPage } from './features/products'
+import { StaffListPage } from './features/users'
+import { AuthProvider } from './lib/auth-context'
+import { TaxListPage } from './features/taxes'
+import { PaymentTermListPage } from './features/payment-terms'
 import './App.css'
 
-type ApiState =
-  | { status: 'checking' }
-  | { status: 'online'; health: Health }
-  | { status: 'offline'; message: string }
+type ApiState = { status: 'checking' } | { status: 'online'; health: Health } | { status: 'offline'; message: string }
 
-type ActiveTab = 'overview' | 'taxes' | 'payment-terms' | 'pickers-demo'
+function usePath(): string {
+  const [path, setPath] = useState(() => window.location.pathname)
+  useEffect(() => {
+    const onChange = () => setPath(window.location.pathname)
+    window.addEventListener('popstate', onChange)
+    return () => window.removeEventListener('popstate', onChange)
+  }, [])
+  return path
+}
 
-function MainContent() {
-  const { role, setRole } = useAuth()
-  const [activeTab, setActiveTab] = useState<ActiveTab>('taxes')
+export function navigate(to: string): void {
+  if (window.location.pathname === to) return
+  window.history.pushState(null, '', to)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+function Sidebar({ navigate }: { navigate: (p: string) => void }) {
+  const role = import.meta.env.VITE_DEMO_USER_ROLE || 'admin'
+
+  return (
+    <nav style={{ width: 240, borderRight: '1px solid #e2ded4', padding: '1rem', background: '#f7f6f2', minHeight: '100vh' }}>
+      <div style={{ fontWeight: 700, marginBottom: '2rem', color: '#1f6f4a', fontSize: '1.2rem' }}>Brightloop</div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem' }}>
+        <li><a href="/app/products" onClick={e => { e.preventDefault(); navigate('/app/products') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Products</a></li>
+        <li><a href="/app/taxes" onClick={e => { e.preventDefault(); navigate('/app/taxes') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Taxes</a></li>
+        <li><a href="/app/payment-terms" onClick={e => { e.preventDefault(); navigate('/app/payment-terms') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Payment Terms</a></li>
+        {role === 'admin' && (
+          <li><a href="/app/users" onClick={e => { e.preventDefault(); navigate('/app/users') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Staff</a></li>
+        )}
+      </ul>
+    </nav>
+  )
+}
+
+const renderWithLayout = (Page: React.ReactNode) => (
+  <AuthProvider>
+    <div style={{ display: 'flex' }}>
+      <Sidebar navigate={navigate} />
+      <div style={{ flex: 1 }}>{Page}</div>
+    </div>
+  </AuthProvider>
+)
+
+export default function App() {
+  const path = usePath()
+  if (path === '/app/products') return renderWithLayout(<ProductListPage navigate={navigate} />)
+  if (path === '/app/products/new') return renderWithLayout(<ProductFormPage navigate={navigate} />)
+  const m = path.match(/^\/app\/products\/(\d+)$/)
+  if (m) return renderWithLayout(<ProductDetailPage id={Number(m[1])} navigate={navigate} />)
+  if (path === '/app/users') return renderWithLayout(<StaffListPage navigate={navigate} />)
+  if (path === '/app/taxes') return renderWithLayout(<TaxListPage />)
+  if (path === '/app/payment-terms') return renderWithLayout(<PaymentTermListPage />)
+
+  return <LandingPage />
+}
+
+function LandingPage() {
   const [api, setApi] = useState<ApiState>({ status: 'checking' })
-
-  // Pickers demo state
-  const [selectedTaxId, setSelectedTaxId] = useState<string>('')
-  const [selectedTermId, setSelectedTermId] = useState<string>('')
-
   useEffect(() => {
     let cancelled = false
-    getHealth()
-      .then((health) => {
-        if (!cancelled) setApi({ status: 'online', health })
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          const message =
-            error instanceof Error ? error.message : 'Unable to reach the API'
-          setApi({ status: 'offline', message })
-        }
-      })
-    return () => {
-      cancelled = true
-    }
+    getHealth().then((health) => { if (!cancelled) setApi({ status: 'online', health }) }).catch((error: unknown) => {
+      if (!cancelled) setApi({ status: 'offline', message: error instanceof Error ? error.message : 'Unable to reach the API' })
+    })
+    return () => { cancelled = true }
   }, [])
+
+  const capabilities = [
+    { title: 'Products & plans', body: 'Catalogue software, variants, billing frequencies, and per-plan policies.' },
+    { title: 'Subscriptions', body: 'Quote, confirm, activate, pause, renew, and close the full lifecycle.' },
+    { title: 'Billing & invoices', body: 'Generate invoices exactly once per period with taxes and discounts.' },
+    { title: 'Payments & reports', body: 'Record payments, track overdue balances, and see recurring revenue.' },
+  ]
 
   return (
     <div className="page">
       <header className="site-header">
-        <a
-          className="brand"
-          href="#home"
-          onClick={(e) => {
-            e.preventDefault()
-            setActiveTab('overview')
-          }}
-          aria-label="Brightloop home"
-        >
-          <span className="brand-mark" aria-hidden="true">
-            B
-          </span>
-          <span>Brightloop</span>
+        <a className="brand" href="/" aria-label="Brightloop home">
+          <span className="brand-mark" aria-hidden="true">B</span><span>Brightloop</span>
         </a>
-
         <nav className="nav" aria-label="Main navigation">
-          <button
-            type="button"
-            className={`nav-button ${activeTab === 'taxes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('taxes')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: activeTab === 'taxes' ? '#2563eb' : '#4b5563',
-              fontWeight: activeTab === 'taxes' ? 700 : 500,
-              cursor: 'pointer',
-              padding: '8px 12px',
-              fontSize: '0.95rem',
-            }}
-          >
-            Taxes
-          </button>
-          <button
-            type="button"
-            className={`nav-button ${activeTab === 'payment-terms' ? 'active' : ''}`}
-            onClick={() => setActiveTab('payment-terms')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: activeTab === 'payment-terms' ? '#2563eb' : '#4b5563',
-              fontWeight: activeTab === 'payment-terms' ? 700 : 500,
-              cursor: 'pointer',
-              padding: '8px 12px',
-              fontSize: '0.95rem',
-            }}
-          >
-            Payment Terms
-          </button>
-          <button
-            type="button"
-            className={`nav-button ${activeTab === 'pickers-demo' ? 'active' : ''}`}
-            onClick={() => setActiveTab('pickers-demo')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: activeTab === 'pickers-demo' ? '#2563eb' : '#4b5563',
-              fontWeight: activeTab === 'pickers-demo' ? 700 : 500,
-              cursor: 'pointer',
-              padding: '8px 12px',
-              fontSize: '0.95rem',
-            }}
-          >
-            Reusable Pickers
-          </button>
-          <button
-            type="button"
-            className={`nav-button ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: activeTab === 'overview' ? '#2563eb' : '#4b5563',
-              fontWeight: activeTab === 'overview' ? 700 : 500,
-              cursor: 'pointer',
-              padding: '8px 12px',
-              fontSize: '0.95rem',
-            }}
-          >
-            System Status
-          </button>
+          <a href="/app/products">Products</a>
+          <a href="/app/taxes">Taxes</a>
+          <a href="/app/payment-terms">Payment Terms</a>
+          <a href="#status">Status</a>
+          <a href="/login">Sign in</a>
+          <a href="/register">Register</a>
+          <a href="/docs/api/api-specification.md">API docs</a>
         </nav>
-
-        {/* Role Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <label htmlFor="role-select" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280' }}>
-            Current Role:
-          </label>
-          <select
-            id="role-select"
-            value={role}
-            onChange={(e) => setRole(e.target.value as Role)}
-            style={{
-              padding: '4px 8px',
-              borderRadius: '6px',
-              border: '1px solid #d1d5db',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              backgroundColor: role === 'admin' ? '#eff6ff' : '#f9fafb',
-              color: role === 'admin' ? '#1d4ed8' : '#374151',
-              cursor: 'pointer',
-            }}
-          >
-            <option value="admin">Admin (Full Access)</option>
-            <option value="staff">Staff (Read-Only)</option>
-          </select>
-        </div>
       </header>
-
-      <main style={{ padding: '24px 0', minHeight: '80vh' }}>
-        {activeTab === 'taxes' && <TaxListPage />}
-
-        {activeTab === 'payment-terms' && <PaymentTermListPage />}
-
-        {activeTab === 'pickers-demo' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
-            <h1 style={{ margin: '0 0 8px 0', fontSize: '1.75rem', color: '#111827' }}>
-              Reusable Selection Components
-            </h1>
-            <p style={{ margin: '0 0 24px 0', color: '#6b7280' }}>
-              Exported pickers for F08 (Quotation Templates), F09 (Quotations & Subscriptions), and F12 (Recurring Billing Engine).
-            </p>
-
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '24px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                padding: '24px',
-              }}
-            >
-              <div>
-                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem' }}>1. TaxSelect Component</h3>
-                <p style={{ margin: '0 0 10px 0', color: '#6b7280', fontSize: '0.875rem' }}>
-                  Filters active tax rules only; displays tax rate in <code>18.000 %</code> format.
-                </p>
-                <div style={{ maxWidth: '400px' }}>
-                  <TaxSelect
-                    value={selectedTaxId}
-                    onChange={(id) => setSelectedTaxId(id)}
-                    roleHeader={role}
-                  />
-                </div>
-                <small style={{ color: '#4b5563', marginTop: '6px', display: 'block' }}>
-                  Selected Tax ID: <strong>{selectedTaxId || '(none)'}</strong>
-                </small>
-              </div>
-
-              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: 0 }} />
-
-              <div>
-                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem' }}>2. PaymentTermSelect Component</h3>
-                <p style={{ margin: '0 0 10px 0', color: '#6b7280', fontSize: '0.875rem' }}>
-                  Filters active payment terms only; displays term name and due days.
-                </p>
-                <div style={{ maxWidth: '400px' }}>
-                  <PaymentTermSelect
-                    value={selectedTermId}
-                    onChange={(id) => setSelectedTermId(id)}
-                    roleHeader={role}
-                  />
-                </div>
-                <small style={{ color: '#4b5563', marginTop: '6px', display: 'block' }}>
-                  Selected Payment Term ID: <strong>{selectedTermId || '(none)'}</strong>
-                </small>
-              </div>
-            </div>
+      <main>
+        <section className="hero">
+          <p className="eyebrow">Subscription Management System</p>
+          <h1>One platform for the whole subscription lifecycle.</h1>
+          <p className="lede">Quote, subscribe, bill, collect, and report — without spreadsheets. Built for the Odoo x Make-A-Ton 9.0 Kochi Hackathon 2026.</p>
+          <div className="hero-actions">
+            <a className="button primary" href="/app/products">Open catalogue</a>
           </div>
-        )}
-
-        {activeTab === 'overview' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
-            <h2>API & System Status</h2>
-            <div
-              style={{
-                marginTop: '16px',
-                padding: '20px',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb',
-                backgroundColor: '#f9fafb',
-              }}
-            >
-              {api.status === 'checking' && <p>Checking API connection...</p>}
-              {api.status === 'online' && (
-                <div>
-                  <p style={{ color: '#15803d', fontWeight: 600 }}>
-                    API Online ({api.health.service} v{api.health.version})
-                  </p>
-                  <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-                    Taxes and Payment Terms endpoints (/api/v1/taxes, /api/v1/payment-terms) are active.
-                  </p>
-                </div>
-              )}
-              {api.status === 'offline' && (
-                <p style={{ color: '#dc2626' }}>API Offline: {api.message}</p>
-              )}
-            </div>
+        </section>
+        <section className="section">
+          <h2>What the platform covers</h2>
+          <div className="card-grid">
+            {capabilities.map((c) => <article className="card" key={c.title}><h3>{c.title}</h3><p>{c.body}</p></article>)}
           </div>
-        )}
+        </section>
+        <section id="status" className="section status-section">
+          <div><h2>API status</h2><p className="muted">The frontend talks to the Node API through the Vite proxy at <code>/api/v1</code>.</p></div>
+          <div className={`status-card status-${api.status}`}>
+            <span className="dot" aria-hidden="true" />
+            {api.status === 'checking' && <span>Checking the API…</span>}
+            {api.status === 'online' && <span>API online · {api.health.service} v{api.health.version}</span>}
+            {api.status === 'offline' && <span>API offline · {api.message}</span>}
+          </div>
+        </section>
       </main>
+      <footer className="site-footer"><span>Brightloop Software · Hackathon 2026</span><span>Node + Express API · React + Vite frontend</span></footer>
     </div>
   )
 }
-
-export function App() {
-  return (
-    <AuthProvider>
-      <MainContent />
-    </AuthProvider>
-  )
-}
-
-export default App

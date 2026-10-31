@@ -32,3 +32,13 @@ COPY src ./src
 USER bun
 EXPOSE 4000
 CMD ["bun", "src/index.ts"]
+
+# One-off migration + reference seed runner. Includes dev dependencies (tsx)
+# and the SQL files, which the production images deliberately omit.
+FROM node-deps AS migrate
+ENV NODE_ENV=production
+COPY tsconfig.json ./
+COPY src ./src
+COPY db ./db
+USER node
+CMD ["sh", "-c", "npx tsx db/migrate.ts --features=f00 && npx tsx db/seed.ts"]

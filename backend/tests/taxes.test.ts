@@ -82,7 +82,7 @@ describe('Tax Rules API Integration Tests', () => {
   it('rejects anonymous requests with 401', async () => {
     const res = await request(app).get('/api/v1/taxes')
     expect(res.status).toBe(401)
-    expect(res.body.error.code).toBe('UNAUTHORIZED')
+    expect(res.body.error.code).toBe('UNAUTHENTICATED')
   })
 
   it('rejects customer requests with 403', async () => {
