@@ -165,6 +165,10 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 
 ### 1.7 Database — `backend/db/`
 
+| File | Status | Owner | Purpose |
+|---|---|---|---|
+| `backend/db/migrate.test.ts` | EXISTING | F00/F01 | Explicit feature scoping and strict unscoped migration failure regression tests. |
+
 | Path | Status | Owner | Purpose | Notes |
 |---|---|---|---|---|
 | `schema.prisma` | SCAFFOLDED | F00 | Prisma schema — **only** if D-03 selects Prisma. | If D-03 lands on raw SQL, delete the file. Column-by-column must match [DB Design §4](../database/database-design.md). |
@@ -252,7 +256,7 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `users` | F03 | `pages/StaffListPage.tsx`; `components/StaffFormModal.tsx`; `hooks/useStaff.ts`. | – |
 | `customers` | F04 | `pages/CustomerListPage.tsx`, `pages/CustomerDetailPage.tsx`; `components/CustomerSelect.tsx` (shared); `hooks/useCustomers.ts`. | `CustomerSelect`. |
 | `products` | F06 | `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`; `hooks/useProducts.ts`. | `ProductSelect`, `VariantSelect`. |
-| `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`; `hooks/usePlans.ts`. | `PlanSelect`. |
+| `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
 | `quotation-templates` | F08 | `pages/TemplateListPage.tsx`, `pages/TemplateFormPage.tsx`; `components/LineItemsEditor.tsx` (shared), `components/TemplateSelect.tsx`; `hooks/useTemplates.ts`. | `LineItemsEditor`, `TemplateSelect`. |
 | `subscriptions` | F09, F10 | `pages/QuotationListPage.tsx`, `pages/SubscriptionListPage.tsx`, `pages/SubscriptionDetailPage.tsx`; `components/StatusTimeline.tsx`, `components/SubscriptionStatusBadge.tsx`, `components/SubscriptionActions.tsx`; `hooks/useSubscriptions.ts`, `hooks/useQuotations.ts`. | `SubscriptionStatusBadge`. |
 | `taxes` | F05 | `pages/TaxListPage.tsx`; `components/TaxSelect.tsx`; `hooks/useTaxes.ts`. | `TaxSelect`. |

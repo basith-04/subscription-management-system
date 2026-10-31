@@ -2,6 +2,7 @@ import { Router, type RequestHandler } from 'express'
 import type { Config } from '../config.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
 import type { AuthService } from '../modules/auth/auth.service.js'
+import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { VERSION } from '../version.js'
 
 export interface HealthPayload {
@@ -49,6 +50,7 @@ export function createApiRouter({
     '/auth',
     createAuthRouter({ service: authService, config, authenticate }),
   )
+  router.use('/plans', createPlansRouter(authenticate))
 
   return router
 }

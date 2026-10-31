@@ -496,6 +496,19 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
   })
 
   describe('security controls', () => {
+    it('protects the integrated plans router from anonymous and customer requests', async () => {
+      const paths = ['/api/v1/plans', '/api/v1/plans/1', '/api/v1/plans/1/products']
+      const registered = await request(app).post('/api/v1/auth/register').send(registration)
+      expect(registered.status).toBe(201)
+      const cookie = cookiePair(registered)
+      for (const path of paths) {
+        const method = path.endsWith('/products') ? 'put' : 'get'
+        expect((await request(app)[method](path)).status).toBe(401)
+        expect((await request(app)[method](path).set('Cookie', cookie)).status).toBe(403)
+      }
+      expect((await request(app).get('/api/v1/plans').set({ 'x-user-id': '1', 'x-user-role': 'admin' })).status).toBe(401)
+    })
+
     it('enforces back-office roles in server middleware, not just the UI', async () => {
       const config = loadConfig({ APP_ENV: 'test', JWT_SECRET: TEST_JWT_SECRET } as NodeJS.ProcessEnv)
       const protectedApp = express()

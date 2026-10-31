@@ -41,4 +41,4 @@ COPY tsconfig.json ./
 COPY src ./src
 COPY db ./db
 USER node
-CMD ["sh", "-c", "npx tsx db/migrate.ts && npx tsx db/seed.ts"]
+CMD ["sh", "-c", "npx tsx db/migrate.ts --features=f00 && npx tsx db/seed.ts"]

@@ -25,6 +25,7 @@ async function ensureMigrationTable(pool: Pool): Promise<void> {
 export async function runMigrations(
   pool: Pool,
   migrationsDir: string = MIGRATIONS_DIR,
+  features?: readonly string[],
 ): Promise<string[]> {
   await ensureMigrationTable(pool)
 
@@ -36,6 +37,7 @@ export async function runMigrations(
 
     const files = (await readdir(migrationsDir))
       .filter((file) => file.endsWith('.sql'))
+      .filter((file) => !features || features.includes(/^\d{14}_(f\d{2})_/.exec(file)?.[1] ?? ''))
       .sort()
 
     for (const file of files) {
@@ -65,10 +67,16 @@ export async function runMigrations(
 async function main(): Promise<void> {
   await import('dotenv/config')
   const config = loadConfig()
+  const featureArg = process.argv.slice(2).find((arg) => arg.startsWith('--features='))
+  const features = featureArg?.slice('--features='.length).split(',')
+  if (features && !features.every((feature) => /^f\d{2}$/.test(feature))) {
+    throw new Error('Expected --features=f00,f07 (feature identifiers only)')
+  }
   const pool = createPool(config.databaseUrl)
 
   try {
-    const applied = await runMigrations(pool)
+    const applied = await runMigrations(pool, undefined, features)
+    if (features) console.log(`migration scope: ${features.join(', ')} (other features are not applied)`)
     if (applied.length === 0) {
       console.log('database is up to date')
     } else {

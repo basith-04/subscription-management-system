@@ -5,6 +5,23 @@ end-to-end acceptance. Email verification is deferred.
 
 ## Repository and foundation
 
+F01 PR integration with F07: retain `/plans` routes and use real session cookies
+in the plans integration suite, never demo identity headers. The full suite
+requires PostgreSQL 15+ for F07; authentication alone works on PostgreSQL 14.
+Use `db:migrate -- --features=f00` to prepare auth-only databases. Unscoped
+migration remains strict and fails until F06's missing schema prerequisite lands.
+Frontend test dependencies stay on Node-20-compatible Vitest 4 and jsdom 29;
+both F01 and F07 component tests run on the same runner.
+
+PR #9 verification after integrating main: 128 backend tests pass against a
+temporary PostgreSQL 16 instance, 26 combined frontend tests pass, backend
+typecheck/lint/build and frontend build pass. The Chromium walkthrough against
+the integrated code passes customer registration, logout/back navigation,
+customer re-login and back-office denial, and Admin/Staff login. Registration
+layout checks at 360/768/1280 px pass. Existing F07 frontend lint warnings remain;
+there are no lint errors. Docker image execution cannot be verified in this
+chroot (layer registration fails); normal CI image builds remain required.
+
 - [x] Merge `origin/main` into `feat001`, preserving the F01 implementation and
   compatible shared F00 interfaces. Temporary header-based demo authentication
   from main was not retained.
