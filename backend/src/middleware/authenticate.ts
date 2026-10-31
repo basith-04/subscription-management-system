@@ -1,10 +1,11 @@
 import type { RequestHandler } from 'express'
-import type { Config } from '../config.js'
+import { loadConfig, type Config } from '../config.js'
 import type { AuthUser } from '../lib/auth-user.js'
 import { ApiError } from '../lib/errors.js'
 import { ERROR_CODES } from '../lib/error-codes.js'
 import { verifySessionToken } from '../lib/session.js'
-import type { AuthRepository } from '../modules/auth/auth.repository.js'
+import { getSharedPool } from '../lib/db.js'
+import { createAuthRepository, type AuthRepository } from '../modules/auth/auth.repository.js'
 
 export interface AuthenticateDependencies {
   repo: AuthRepository
@@ -72,4 +73,13 @@ export function createAuthenticate({
       next(error)
     }
   }
+}
+
+/** Compatibility entry point for routes using the shared F00 middleware. */
+export const authenticate: RequestHandler = (req, res, next) => {
+  const config = loadConfig()
+  return createAuthenticate({
+    repo: createAuthRepository(getSharedPool(config.databaseUrl)),
+    config,
+  })(req, res, next)
 }

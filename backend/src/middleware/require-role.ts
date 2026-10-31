@@ -2,6 +2,13 @@ import type { RequestHandler } from 'express'
 import { ApiError } from '../lib/errors.js'
 import { ERROR_CODES } from '../lib/error-codes.js'
 
+export type Role = 'admin' | 'staff' | 'customer'
+export interface AuthenticatedRequestUser {
+  id: number
+  role: Role
+  customerId?: number
+}
+
 /**
  * Role gate for protected routes. The role comes from the database-backed
  * session, never from the request body or a client-supplied claim.

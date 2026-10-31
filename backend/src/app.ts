@@ -4,7 +4,7 @@ import express, { type Express, type Request, type Response } from 'express'
 import helmet from 'helmet'
 import type { Pool } from 'pg'
 import { loadConfig, type Config } from './config.js'
-import { createPool } from './lib/db.js'
+import { getSharedPool } from './lib/db.js'
 import { createAuthenticate } from './middleware/authenticate.js'
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js'
 import { originCheck } from './middleware/origin-check.js'
@@ -27,7 +27,7 @@ export function createApp(
   dependencies: AppDependencies = {},
 ): Express {
   const app = express()
-  const pool = dependencies.pool ?? createPool(config.databaseUrl)
+  const pool = dependencies.pool ?? getSharedPool(config.databaseUrl)
   const authRepository = createAuthRepository(pool)
   const authService = createAuthService({
     repo: authRepository,
