@@ -153,7 +153,7 @@ The API exposes this as a computed field `payment_state`: `not_due | outstanding
 
 | # | Rule | Enforced by |
 |---|---|---|
-| 1 | Transitions follow the tables above; otherwise HTTP 409 `INVALID_STATE_TRANSITION` | service-layer state machine function per entity (single place; no ad-hoc `UPDATE status`) |
+| 1 | Transitions follow the tables above; otherwise HTTP 409 `INVALID_STATE_TRANSITION` | service-layer state machine function per entity (single place; no ad-hoc `UPDATE status`) — PLANNED: shared helper `backend/src/lib/state-machine.js`, used by `subscriptions.state-machine.js` and `invoices.state-machine.js` ([Directory Guidelines §C.4](../development/directory-guidelines.md)) |
 | 2 | Status updates use `UPDATE … WHERE id = $1 AND status = $expected` and check the row count, so two simultaneous requests cannot both succeed | SQL |
 | 3 | Pause only for `active` and `allow_pause` | service + `CHECK (paused_at IS NULL OR status='active')` |
 | 4 | `closed_at` required for closed | `CHECK` |

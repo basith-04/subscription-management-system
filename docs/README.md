@@ -16,6 +16,8 @@
 | 8 | [Development Roadmap](development/development-roadmap.md) | phases, parallel work streams, critical path |
 | 9 | [Git Workflow](development/git-workflow.md) | how the four of us collaborate without breaking each other's work |
 | 10 | [User Access & Authorization](architecture/user-access-and-authorization.md) | identity, entitlements, sessions, revocation, webhooks |
+| 11 | [Directory Guidelines](development/directory-guidelines.md) | where every kind of file lives, naming, imports, shared-file rules |
+| 12 | [Feature Breakdown](implementation/feature-breakdown.md) | features each person can build end to end, with dependencies |
 
 ## Conventions used in the docs
 - **[Official]** – required by the problem statement. **[Proposed]** – our engineering decision.

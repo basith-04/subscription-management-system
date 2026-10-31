@@ -1,7 +1,7 @@
 # Team Collaboration and Git Workflow
 
 > **Status:** Proposed team process. Written so that someone new to Git can follow it step by step.
-> Related: [Development Roadmap](development-roadmap.md) · [System Architecture](../architecture/system-architecture.md)
+> Related: [Development Roadmap](development-roadmap.md) · [System Architecture](../architecture/system-architecture.md) · [Directory Guidelines](directory-guidelines.md)
 
 ## 1. Team
 
@@ -175,8 +175,8 @@ Review pairing is rotated, so everyone sees different parts of the code: e.g. A�
 A conflict happens when two people changed the same lines. It is normal, not a disaster.
 
 **Prevention**
-- Each person owns modules (see roadmap streams) — avoid editing other people's files without telling them.
-- Shared files (routes index, package.json, app shell, `database` migrations) are conflict hotspots: change them in small PRs and merge quickly; announce in the group chat.
+- Each person owns whole features/modules ([Feature Breakdown](../implementation/feature-breakdown.md)) — avoid editing other people's files without telling them.
+- Shared files (`package.json` and lockfiles, `.env.example`, database schema and migrations, API client, route registry, app routing/menu, global styles, common middleware, `lib/`) are conflict hotspots: announce first, change them in their own small PR, and merge the same day. The full list and the change-notice template are in [Directory Guidelines §L.2](directory-guidelines.md).
 - Pull/merge `main` often.
 
 **Resolving, step by step** (typically after `git merge origin/main`):

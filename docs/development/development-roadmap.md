@@ -1,7 +1,7 @@
 # Development Roadmap
 
 > **Status:** Proposed plan. Nothing has been built. We do not yet know the exact hackathon time budget — **OPEN QUESTION: total hours/days available and the submission deadline.** Effort is therefore given as **S** (≈ half day), **M** (≈ 1 day), **L** (≈ 2 days) for one developer, to be re-scaled when the deadline is known.
-> Related: [System Architecture](../architecture/system-architecture.md) · [Database Design](../database/database-design.md) · [API Spec](../api/api-specification.md) · [Git Workflow](git-workflow.md)
+> Related: [System Architecture](../architecture/system-architecture.md) · [Database Design](../database/database-design.md) · [API Spec](../api/api-specification.md) · [Git Workflow](git-workflow.md) · [Directory Guidelines](directory-guidelines.md) · [Feature Breakdown](../implementation/feature-breakdown.md)
 
 ## 1. How the team works
 
@@ -13,6 +13,8 @@ Team of four: Abdul Basith P V (Team Leader), Evan Iwin Biju, Ashin Chacko, Hari
 | **B – Backend CRUD** | straightforward REST modules following a template module | backend beginner → intermediate | customers, products, variants, plans, taxes, discounts, templates |
 | **C – Back-office UI** | admin/staff screens, shared components | frontend intermediate | layouts, tables, forms, dashboards |
 | **D – Portal UI & polish** | customer portal, auth screens, responsive design, print invoice | frontend beginner → intermediate | register/login/reset pages, portal, invoice print view, docs, demo data |
+
+> **Note – assignment model:** the team has chosen **feature-based ownership** (one person builds a whole feature across database, backend and frontend) — see the [Feature Breakdown](../implementation/feature-breakdown.md). Use the streams above only as a *skill-mix guide*, not as a frontend/backend split; the phases and critical path below still apply. Module and folder boundaries are defined in the [Directory Guidelines](directory-guidelines.md). Where rule 2 below says one stream builds the reference module, the Feature Breakdown instead builds a reference slice together (F00.5) and starts beginners on F05.
 
 Rules that keep people unblocked:
 1. **Contract first.** The [API Spec](../api/api-specification.md) is the agreement. Frontend developers code against it using a temporary mock *only for the first days of a screen*; the final app reads from the real API ("no static JSON" is an evaluation criterion).
@@ -58,7 +60,7 @@ flowchart LR
 **Dependencies:** this documentation reviewed and open questions decided (stack, JS vs TS, ORM, UI library).
 
 **Deliverables**
-- Repo structure `frontend/`, `backend/`, `docs/`; root `README` with setup steps.
+- Repo structure `frontend/`, `backend/`, `docs/` as defined in the [Directory Guidelines](directory-guidelines.md); root `README` with setup steps.
 - `docker-compose.yml` (PostgreSQL + Mailpit), `.env.example`, `.gitignore`.
 - Backend skeleton: Express app, config validation, error handler, health endpoint, request logging.
 - Frontend skeleton: Vite + React, router, layout shell, API client, UI library chosen.

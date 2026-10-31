@@ -61,7 +61,7 @@ OPEN QUESTION: Should the finance lead have a dedicated role (read-only reports 
 
 Two checks on every protected request, in this order:
 
-1. **Role check** (what kind of user?) — route-level middleware, e.g. `requireRole('admin')`, `requireRole('admin','staff')`. Better still: a named permission map (`permissions.js`: `'discount:create' → ['admin']`) so the matrix above exists in exactly one place in code and in this document.
+1. **Role check** (what kind of user?) — route-level middleware, e.g. `requireRole('admin')`, `requireRole('admin','staff')`. Better still: a named permission map (`backend/src/middleware/permissions.js`, PLANNED: `'discount:create' → ['admin']`) so the matrix above exists in exactly one place in code and in this document.
 2. **Ownership / policy check** (which records, which actions?)
    - Customer endpoints derive `customer_id` from the **session**, never from the request body/URL, and add it to every query.
    - Plan policies (`allow_pause`, `allow_early_close`, `allow_renewal`) are checked in the service layer at the time of the action, for customers and staff alike (Admin may override and is audited).

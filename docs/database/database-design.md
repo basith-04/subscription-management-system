@@ -14,7 +14,9 @@
 | **Few tables, justified** | 25 tables. Each one exists for a requirement in the problem statement (see §3). |
 | **Simple keys** | `BIGINT GENERATED ALWAYS AS IDENTITY` primary keys. Human-facing numbers (`SUB-000123`, `INV-000456`) are separate unique columns fed by DB sequences. Customer isolation is enforced by scoping queries, not by hiding IDs. |
 
-**Conventions:** table names are plural `snake_case`; every table has `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; mutable tables also have `updated_at`. "Enum" columns are `TEXT` with a `CHECK (col IN (...))`, which is easier to change than native Postgres enums.
+**Conventions:** table names are plural `snake_case`; every table has `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; mutable tables also have `updated_at`. "Enum" columns are `TEXT` with a `CHECK (col IN (...))`, which is easier to change than native Postgres enums. Constraint and index names follow `pk_`/`fk_`/`uq_`/`ix_`/`ck_` + table name + columns or purpose (e.g. `uq_invoices_subscription_period_start`).
+
+**Where the database files will live (PLANNED, not created yet):** `backend/db/migrations/` (one timestamp-named migration per feature, never edited after merging to `main`) and `backend/db/seeds/{reference,demo,bulk}/`; if Prisma is chosen, `backend/db/schema.prisma`. Schema changes are made in **this document first**. Full rules: [Directory Guidelines §D](../development/directory-guidelines.md).
 
 **Assumptions** (marked `OPEN QUESTION` where the team should confirm):
 - A single currency (INR) is used throughout, so there is no currency column. OPEN QUESTION: confirm.
@@ -448,7 +450,7 @@ Purpose: a bill for one subscription for one billing period. All printable detai
 **Duplicate-invoice guard:**
 ```sql
 -- one live invoice per subscription per billing period
-CREATE UNIQUE INDEX uq_invoice_period
+CREATE UNIQUE INDEX uq_invoices_subscription_period_start
   ON invoices (subscription_id, period_start)
   WHERE status <> 'cancelled';
 ```

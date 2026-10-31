@@ -176,17 +176,19 @@ flowchart TB
 - **Back-office** (`/app/*`) for Admin and Staff: dashboard, customers, products, plans, templates, quotations, subscriptions, invoices, payments, taxes, discounts, staff, reports. Menu items are hidden by role, **but the backend enforces access** — hiding is only for usability.
 - **Customer portal** (`/portal/*`): my subscriptions, my invoices (view/print/pay-status), profile, pause/renew/close where the plan allows.
 
-Proposed structure (planning only, not created):
+Proposed structure (**PLANNED – not created yet**; the authoritative, detailed version with naming and import rules is [Directory Guidelines §A.4](../development/directory-guidelines.md)):
 
 ```
 frontend/
   src/
-    api/            # one file per backend module (customers.js, invoices.js …)
-    components/     # shared UI: Table, Pagination, FormField, StatusBadge, Money …
-    features/       # one folder per module: products/, plans/, subscriptions/, invoices/ …
+    api/            # client.js + one file per backend module (customers.js, invoices.js …)
+    components/ui/  # domain-free shared UI: DataTable, Pagination, FormField, StatusBadge, Money …
+    features/       # one folder per module (same names as backend modules); pages/, components/, hooks/, schemas.js
+    hooks/          # generic hooks used by 2+ features
     layouts/        # BackOfficeLayout, PortalLayout, AuthLayout
-    routes/         # route table + role guards
-    lib/            # money formatting, date helpers
+    routes/         # route table, role guards, menu config
+    lib/            # money formatting, date helpers, constants
+    config/  styles/  assets/  test/
 ```
 
 UX rules: responsive layout (table → cards on small screens); every list has search, filters, sorting, pagination; status shown with consistent colored badges; money displayed from API strings (no float math in the UI); inline validation messages from the same rules as the backend; loading/empty/error states everywhere; a single consistent primary color and spacing scale.
@@ -195,19 +197,23 @@ UX rules: responsive layout (table → cards on small screens); every list has s
 
 **Node.js + Express**, organized by feature module, three layers each:
 
+Directory layout (**PLANNED – not created yet**; authoritative details: [Directory Guidelines §A.3](../development/directory-guidelines.md)):
+
 ```
 backend/
+  db/               # schema (if the ORM needs one), migrations/, seeds/
   src/
-    modules/
-      auth/  users/  customers/  products/  plans/  quotations/
-      subscriptions/  taxes/  discounts/  invoices/  payments/  reports/
-        # each: routes → controller → service → repository (+ schemas.js)
-    billing/        # period calculator, pricing, discount & tax calculators, run orchestration
-    jobs/           # scheduler wiring, job entry points
-    middleware/     # auth, rbac, validate, error handler, rate limit
-    lib/            # money (decimal), dates, mailer, logger, audit
-    config/         # env loading and validation
-  db/               # (later) migrations, seed scripts
+    routes.js       # the one place that mounts every module router under /api/v1
+    modules/        # 16 modules: auth users customers products plans quotation-templates subscriptions
+                    # taxes payment-terms discounts invoices billing-runs payments portal reports audit-logs
+                    #   each: <module>.routes.js → .controller.js → .service.js → .repository.js (+ .schemas.js, index.js)
+                    #   (quotation endpoints are a second router inside `subscriptions`; a quotation is a subscription)
+    billing/        # billing ENGINE, no HTTP: calculators/ (pure), invoice-builder.js, run-billing.js
+    jobs/           # index.js – the schedule registry (job functions live in <module>.jobs.js)
+    middleware/     # authenticate, require-role, permissions, validate, error-handler, rate-limit
+    lib/            # money, dates, db, mailer, audit, scheduler, state-machine, pagination, responses, errors
+    config/         # env.js – the only place that reads process.env
+  tests/            # integration/, factories/, helpers/  (unit tests sit next to the code)
 ```
 
 | Layer | Responsibility | Must not |

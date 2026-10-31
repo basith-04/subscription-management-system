@@ -42,6 +42,8 @@ Architecture and planning documents live in [`docs/`](docs/README.md). They desc
 | [User Access & Authorization](docs/architecture/user-access-and-authorization.md) | Authentication, entitlements, sessions, webhooks |
 | [Development Roadmap](docs/development/development-roadmap.md) | Phases and team work streams |
 | [Git Workflow](docs/development/git-workflow.md) | Branching, pull requests, code review |
+| [Directory Guidelines](docs/development/directory-guidelines.md) | Repository structure, naming, imports, shared-file rules |
+| [Feature Breakdown](docs/implementation/feature-breakdown.md) | End-to-end features, dependencies, assignment |
 
 ## Repository structure
 

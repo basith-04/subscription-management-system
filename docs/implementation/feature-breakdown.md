@@ -2,7 +2,7 @@
 
 > **Status:** Planning handbook. **Nothing described here is implemented yet.**
 > **Purpose:** split the Subscription Management System into end-to-end features that one developer can pick up and finish across database, backend, API, frontend, validation, and tests.
-> **Source of truth:** [System Architecture](../architecture/system-architecture.md) · [Database Design](../database/database-design.md) · [Billing Engine](../architecture/billing-engine.md) · [Data Flows](../architecture/data-flows.md) · [State Machines](../architecture/state-machines.md) · [API Spec](../api/api-specification.md) · [Security & RBAC](../architecture/security-and-rbac.md)
+> **Source of truth:** [Directory Guidelines](../development/directory-guidelines.md) (folders, naming) · [System Architecture](../architecture/system-architecture.md) · [Database Design](../database/database-design.md) · [Billing Engine](../architecture/billing-engine.md) · [Data Flows](../architecture/data-flows.md) · [State Machines](../architecture/state-machines.md) · [API Spec](../api/api-specification.md) · [Security & RBAC](../architecture/security-and-rbac.md)
 >
 > This document does not change those documents. Where they are silent, inconsistent, or need a team decision, the item is marked **PENDING DECISION `D-xx`** and listed in [§11](#11-pending-decisions-register) with the default this handbook assumes.
 
@@ -35,7 +35,7 @@
 - `D-xx` – pending decision (see §11). Do not invent an answer; use the stated default and note it in your PR.
 - **Official** = in the problem statement; **Proposed** = our design (as in the other docs).
 - Role letters follow the API Spec: **A** Admin · **S** Staff · **C** Customer (own data) · **P** Public · **Any** logged in.
-- Paths such as `backend/src/modules/plans/` are the **proposed** layout from [System Architecture §9](../architecture/system-architecture.md); the folders do not exist yet.
+- Paths such as `backend/src/modules/plans/` follow the [Directory Guidelines](../development/directory-guidelines.md) (authoritative for folder layout, file naming and imports); the folders do not exist yet.
 - Complexity: Low (≈ ½–1 day) · Medium (≈ 1–2 days) · High (≈ 2–4 days) for one developer. These are relative estimates; the hackathon time budget is still unknown (see the [Roadmap](../development/development-roadmap.md)).
 
 ---
@@ -121,7 +121,7 @@ These files are touched by many features. **F00 pre-creates them with placeholde
 
 | Hotspot | Mitigation |
 |---|---|
-| Backend route registry (`routes/index`) | F00 mounts all 12 module routers up front (empty routers). |
+| Backend route registry (`src/routes.js`) | F00 mounts all 16 module routers up front (empty routers). |
 | Backend permission map (`permissions`) | F00 lists every permission key from the RBAC matrix; features reference keys, they do not add new ones without a PR to the map. |
 | Frontend route table and sidebar menu config | F00 declares all routes and menu items (with a "coming soon" page). Features replace the placeholder component only. |
 | Scheduler job registry | F00 provides `registerJob(name, schedule, fn)`; each feature registers its own job in its own module. |
@@ -853,7 +853,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 | **Can be developed independently** | Yes, with factories for catalogue data |
 | **Order** | W3 (after F08 migration merges) – **on the critical path** |
 | **Integration points** | F10 extends the same state machine (activate/pause/renew/close); F11 and F12 reference subscriptions; F14 shows them to customers; F15 grants discounts to subscriptions |
-| **Shared files / conflicts** | **Subscription state-machine module** (this feature creates it, F10 adds transitions – merge F09's module first); the subscription detail page (F10, F12, F15 add panels – leave panel slots); `billing/pricing` module (owned here, reused by F12) |
+| **Shared files / conflicts** | **Subscription state-machine module** (this feature creates it, F10 adds transitions – merge F09's module first); the subscription detail page (F10, F12, F15 add panels – leave panel slots); `billing/calculators/pricing.js` (owned here, reused by F12) |
 | **Complexity** | High |
 
 **A. Overview.** Official: sales reps build a quotation from a template; each subscription has a unique number, customer, plan, start and expiry date, payment terms, and lines (product, quantity, unit price, tax, amount); it moves Draft → Quotation → Confirmed → Active → Closed and the team can always see where it stands. This feature delivers creation, editing, lines and totals, numbering, the first three transitions (plus cancellation), and the staff list/detail screens. *Key design fact:* **a quotation is a subscription whose status is `draft` or `quotation`** — there is no separate table ([Database Design §3](../database/database-design.md)).
@@ -878,7 +878,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 - Edits of lines in `draft`/`quotation` replace the item set in one transaction; `line_amount` is a generated column.
 
 **D. Backend implementation**
-- Module `modules/subscriptions/` (service shared by `/quotations` and `/subscriptions` routes) and `billing/pricing.js` (`resolveUnitPrice`, `computeLine`, `computeTotals` using `lib/money`; F12 reuses these).
+- Module `modules/subscriptions/` (service shared by `/quotations` and `/subscriptions` routes) and `billing/calculators/pricing.js` (`resolveUnitPrice`, `computeLine`, `computeTotals` using `lib/money`; F12 reuses these).
 - Service functions: `createFromTemplate`, `createFromPlan`, `update`, `issueQuotation`, `confirm`, `cancel`, `list`, `get`, `getHistory`, plus validators: customer exists and active, plan active and `assertPlanAvailable` on `start_date` (F07), `quantity ≥ plan.min_quantity`, `expiry_date ≥ start_date`, tax rule active, `payment_term` default from the template/plan.
 - **State machine** (using the F00 helper): allowed transitions `draft→quotation`, `quotation→confirmed`, `draft|quotation|confirmed→closed`; everything else 409. Guards: `confirm` requires today ≤ `quotation_valid_until`; customers may confirm only their own quotation.
 - Authorization: create/edit/issue/cancel Admin + Staff; confirm Admin + Staff + owning Customer; lists Admin + Staff.
@@ -1116,7 +1116,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 | **Can be developed independently** | Yes – uses factories for active subscriptions; the pure calculators can start earlier |
 | **Order** | W5 – **start immediately when F11's migration merges; critical path and highest risk** |
 | **Integration points** | Creates drafts consumed by F11/F13/F14; F15 plugs discounts into the invoice builder; F10 provides pause/resume/expiry behaviour; scheduler from F00 |
-| **Shared files / conflicts** | `billing/` folder (F09 owns `pricing`; this feature owns `periods`, run orchestration, invoice builder); subscription detail page "Billing" panel; F15 later edits the invoice builder (agree on an extension point: `applyDiscount(ctx)` hook) |
+| **Shared files / conflicts** | `billing/` folder (F09 owns `calculators/pricing.js`; this feature owns `calculators/periods.js`, `invoice-builder.js`, `run-billing.js`); subscription detail page "Billing" panel; F15 later edits the invoice builder (agree on an extension point: `applyDiscount(ctx)` hook) |
 | **Complexity** | High (assign a strong owner; **pair-review every PR**) |
 
 **A. Overview.** Official: invoices are generated automatically when billing is due, pre-filled with customer, lines, taxes and totals; **nothing is billed twice or skipped**. This feature implements the whole [Billing Engine](../architecture/billing-engine.md): period calculation, due-subscription scan with locking, invoice builder with snapshots and tax, cursor advance, catch-up, run bookkeeping, the manual creation endpoint, and the admin Billing screen. *Outcome:* the scheduler, or an Admin click, produces correct draft invoices exactly once per period.
@@ -1138,7 +1138,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 - `billing_runs`: insert at start, update counters/status at the end (informational only).
 
 **D. Backend implementation**
-- Files: `billing/periods.js` (`periodStart(anchor, n, freq)`, `periodEnd`, month-end clamping), `billing/invoiceBuilder.js` (snapshots, per-line tax with `ROUND_HALF_UP`, `invoice_tax_details` from rounded line taxes), `billing/runBilling.js` (orchestration, catch-up loop, `MAX_CATCHUP_PERIODS` guard), `modules/billing/` (routes), job registration (`node-cron` daily + `runOnStartup`).
+- Files: `billing/calculators/periods.js` (`periodStart(anchor, n, freq)`, `periodEnd`, month-end clamping), `billing/invoice-builder.js` (snapshots, per-line tax with `ROUND_HALF_UP`, `invoice_tax_details` from rounded line taxes), `billing/run-billing.js` (orchestration, catch-up loop, `MAX_CATCHUP_PERIODS` guard), `modules/billing-runs/` (routes for `/billing/*`, calling `run-billing.js`), job registration (`node-cron` daily + `runOnStartup`).
 - Rules implemented exactly as in the billing doc: periods always computed **from the anchor** (31 Jan → 28 Feb → 31 Mar), billing in advance, period only if `period_start ≤ expiry_date`, no proration, paused subscriptions skipped, invoice `issue_date = asOf`, `due_date = issue_date + term.due_days`, invoice number from the sequence, status `draft`, `billing_run_id` set.
 - Extension point for F15: `applyDiscount(ctx)` called between line subtotal and tax (returns no-op until F15).
 - Manual creation `POST /invoices {subscription_id, period_start}`: uses the same builder for a valid period boundary; refuses an already invoiced period (`PERIOD_ALREADY_INVOICED`).
@@ -1352,7 +1352,7 @@ Actions reused from F09/F10: `POST /quotations/:id/confirm`, `/subscriptions/:id
 | **Can be developed independently** | Rule CRUD and grants: yes. Billing application needs F12 merged |
 | **Order** | W6 (rule CRUD may start as soon as F09 is merged) |
 | **Integration points** | Modifies the F12 invoice builder (`applyDiscount` hook) and F11 cancel (`releaseDiscountRedemption` hook); invoice detail shows the discount; subscription detail gets a "Discounts" panel |
-| **Shared files / conflicts** | `billing/invoiceBuilder` (F12 owner reviews); invoice detail page; subscription detail page |
+| **Shared files / conflicts** | `billing/invoice-builder.js` (F12 owner reviews); invoice detail page; subscription detail page |
 | **Complexity** | High |
 
 **A. Overview.** Official: **only Admin** creates discount rules — fixed amount or percentage, with minimum purchase and/or quantity, start/end dates and a usage limit — applicable to specific products or whole subscriptions; once it applies it appears on the next invoice on its own and stops when it expires or runs out. *Outcome:* eligible future invoices are discounted automatically, usage is tracked exactly, and the limit cannot be exceeded under concurrency.
@@ -1375,7 +1375,7 @@ Actions reused from F09/F10: `POST /quotations/:id/confirm`, `/subscriptions/:id
 
 **D. Backend implementation**
 - Module `modules/discounts/`: CRUD (Admin write; Admin + Staff read), `listRedemptions`, `grant/revoke` handlers (mounted under `/subscriptions/:id/discounts`, Admin + Staff — **D-14**).
-- `billing/discounts.js`: `selectEligibleDiscount(ctx)` and `allocateToLines(amount, lines)` implementing [Billing Engine §4](../architecture/billing-engine.md): eligibility on `period_start` (active, dates, usage, scope, min purchase, min quantity); fixed = `MIN(value, eligible base)`, percentage = `ROUND_HALF_UP(base × value / 100, 2)`; **one discount per invoice**, largest amount wins (ties: lowest id); proportional allocation with cents remainder on the last eligible line.
+- `billing/calculators/discounts.js`: `selectEligibleDiscount(ctx)` and `allocateToLines(amount, lines)` implementing [Billing Engine §4](../architecture/billing-engine.md): eligibility on `period_start` (active, dates, usage, scope, min purchase, min quantity); fixed = `MIN(value, eligible base)`, percentage = `ROUND_HALF_UP(base × value / 100, 2)`; **one discount per invoice**, largest amount wins (ties: lowest id); proportional allocation with cents remainder on the last eligible line.
 - Plugs into F12 via `applyDiscount(ctx)`; plugs into F11 via `releaseDiscountRedemption(tx, invoiceId)`.
 - Validation: `product_ids` required iff scope `products`; `max_uses ≥ used_count` on edit; past invoices are never altered by edits.
 - Errors: 403, 404, 409, 422.
@@ -1520,7 +1520,7 @@ Actions reused from F09/F10: `POST /quotations/:id/confirm`, `/subscriptions/:id
 - Large table: keyset or offset pagination with a capped `page_size`; filters must use indexed columns.
 
 **D. Backend implementation**
-- Module `modules/audit/`: `list(filters)`. Admin only. No write endpoints (writes happen via the F00 logger inside each feature's transaction).
+- Module `modules/audit-logs/`: `list(filters)`. Admin only. No write endpoints (writes happen via the F00 logger inside each feature's transaction).
 - Mask nothing secret: ensure loggers never write password hashes/tokens into `old_values/new_values` (reviewed and tested here).
 - Errors: 403, 422.
 

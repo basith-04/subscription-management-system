@@ -18,6 +18,8 @@
 | Dates | `YYYY-MM-DD` for dates; ISO-8601 UTC for timestamps |
 | Soft delete | Financial/master data is deactivated (`is_active`), not deleted |
 
+**Where this contract is implemented (PLANNED):** request schemas in `backend/src/modules/<module>/<module>.schemas.js`, business rules in `<module>.service.js`, responses only through `backend/src/lib/responses.js`, error codes from `backend/src/lib/error-codes.js` (which must match the table in §1.2). Frontend calls live in `frontend/src/api/<module>.js`. The `/quotations` endpoints (§7.2) and `/subscriptions` endpoints (§8) are served by the **same** `subscriptions` module. See [Directory Guidelines §G](../development/directory-guidelines.md).
+
 ### 1.1 Success envelope
 ```json
 { "data": { ... } }                         // single resource
