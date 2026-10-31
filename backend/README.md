@@ -121,6 +121,10 @@ curl http://localhost:4000/api/v1/health
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Rate-limit window (15 minutes) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Optional first-admin seed (D-08) |
 | `STAFF_EMAIL` / `STAFF_PASSWORD` | — | Optional initial staff seed |
+| `SMTP_HOST` / `SMTP_PORT` | `localhost` / `1025` | SMTP server (Mailpit defaults for local development) |
+| `SMTP_SECURE` | `false` | Use implicit TLS; authenticated non-implicit connections require STARTTLS |
+| `SMTP_USER` / `SMTP_PASS` | — | Optional SMTP credentials; set both or neither |
+| `MAIL_FROM` | `no-reply@brightloop.local` | Outbound sender address |
 
 Secrets belong in `.env` (ignored by Git) or the deployment environment — never
 in the repository.

@@ -86,7 +86,8 @@ reset screens remain pending F02.
 | `responses.ts` | EXISTING | F00 | `ok`, `created`, `list`, `noContent`. | Every controller. |
 | `errors.ts` | EXISTING | F00 | `ApiError` class (status, code, message, details). | Services, middleware. |
 | `error-codes.ts` | EXISTING | F00 | Central list of error codes. | Everywhere an error is thrown. |
-| `mailer.ts` | SCAFFOLDED | F00 | Nodemailer wrapper around SMTP (Mailpit locally). Never throws into caller; returns a result. | F02 (reset links), F11 (send invoice). |
+| `mailer.ts` | EXISTING | F00 | Nodemailer wrapper around SMTP (Mailpit locally). Returns a sanitized result on failure. | F02 (reset links), F11 (send invoice). |
+| `mailer.test.ts` | EXISTING | F00 | SMTP success, failure and configuration regression tests. | Mail infrastructure. |
 | `audit.ts` | EXISTING | F00 | Transactional insert-only audit row writer. | Every state-changing service. |
 | `session.test.ts` | EXISTING | F01 | JWT signature, expiry-claim and algorithm regression tests. | Authentication. |
 | `scheduler.ts` | SCAFFOLDED | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |

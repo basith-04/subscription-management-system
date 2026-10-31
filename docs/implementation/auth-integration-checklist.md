@@ -13,8 +13,9 @@ end-to-end acceptance. Email verification is deferred.
 - [ ] Configure secure, environment-provided Admin and Staff seed credentials;
   back up the intended database before changing its contents.
 - [ ] Verify a browser, the Docker daemon and Mailpit are available.
-- [ ] Implement the missing F00 mailer, permissions map and customer scoping
-  where needed; verify the intended database user is least-privileged.
+- [x] Implement a failure-safe F00 SMTP mailer with isolated transport tests.
+- [ ] Verify real Mailpit delivery; implement the missing permissions map and
+  customer scoping where needed; verify the database user is least-privileged.
 
 ## F01 checkpoint
 

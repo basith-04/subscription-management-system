@@ -11,6 +11,15 @@ export interface RateLimitConfig {
   max: number
 }
 
+export interface MailConfig {
+  host: string
+  port: number
+  secure: boolean
+  user?: string
+  password?: string
+  from: string
+}
+
 export interface Config {
   env: string
   isProduction: boolean
@@ -22,6 +31,7 @@ export interface Config {
   jwtSecret: string
   cookie: CookieConfig
   authRateLimit: RateLimitConfig
+  mail: MailConfig
 }
 
 const DEFAULT_ALLOWED_ORIGIN = 'http://localhost:5173'
@@ -41,6 +51,7 @@ function parseInteger(
 ): number {
   if (raw === undefined || raw === '') return fallback
 
+  if (!/^\d+$/.test(raw)) throw new Error(`Invalid ${name}: ${raw}`)
   const value = Number.parseInt(raw, 10)
   if (!Number.isInteger(value) || value < minimum || value > maximum) {
     throw new Error(`Invalid ${name}: ${raw}`)
@@ -121,6 +132,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     100_000,
   )
 
+  const smtpHost = (env.SMTP_HOST ?? 'localhost').trim()
+  const mailFrom = (env.MAIL_FROM ?? 'no-reply@brightloop.local').trim()
+  const smtpUser = env.SMTP_USER || undefined
+  const smtpPassword = env.SMTP_PASS || undefined
+  if (!smtpHost || !mailFrom) throw new Error('SMTP_HOST and MAIL_FROM must not be empty')
+  if (Boolean(smtpUser) !== Boolean(smtpPassword)) {
+    throw new Error('SMTP_USER and SMTP_PASS must be set together')
+  }
+  const smtpPort = parseInteger('SMTP_PORT', env.SMTP_PORT, 1025, 1, 65535)
+  const smtpSecure = parseBoolean('SMTP_SECURE', env.SMTP_SECURE, false)
+
   return {
     env: runtimeEnv,
     isProduction,
@@ -141,6 +163,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     authRateLimit: {
       windowMs: rateLimitWindowMs,
       max: rateLimitMax,
+    },
+    mail: {
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      from: mailFrom,
+      ...(smtpUser && smtpPassword ? { user: smtpUser, password: smtpPassword } : {}),
     },
   }
 }
