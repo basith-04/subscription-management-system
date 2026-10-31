@@ -28,7 +28,7 @@ This project is developed by:
 
 ## Documentation
 
-Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design. The application is at the **scaffold stage**: the Node.js API and React frontend have their base structure, but the business features are not implemented yet.
+Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design. The application is at the **early implementation stage**: **F06 (Products & variants)** is implemented end-to-end, while other business features remain in the scaffold stage.
 
 | Document | Description |
 |---|---|
