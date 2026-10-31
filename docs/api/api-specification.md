@@ -1,6 +1,6 @@
 # API Specification (Contract Draft)
 
-> **Status:** Draft contract. **F01 authentication is implemented** (`register`, `login`, `logout`, `me`); all other endpoints are still to be built. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
+> **Status:** Draft contract. **F01 authentication** (`register`, `login`, `logout`, `me`) and **F06 (Products & variants)** endpoints are implemented. Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
 > Related: [Database Design](../database/database-design.md) · [State Machines](../architecture/state-machines.md) · [Billing Engine](../architecture/billing-engine.md) · [Security & RBAC](../architecture/security-and-rbac.md)
 
 ## 1. Conventions
@@ -160,6 +160,40 @@ Example response:
 | PATCH | `/plans/:id` | Update plan / policies | A | subset | plan | as create. Policy changes apply to **future actions**; they do not change existing subscription states | — |
 | PUT | `/plans/:id/products` | Replace the plan's product list | A | `{ products: [{ product_id, variant_id?, default_quantity, unit_price_override? }] }` | `200` list | products exist & active; variant belongs to product; no duplicates | 422 |
 | DELETE | `/plans/:id` | Delete unused plan | A | — | `204` | — | 409 `IN_USE` |
+
+**Implementation notes (F07)**
+- Access: Admin read + write; Staff read-only; Customers have **no** access to `/plans*` (403 `FORBIDDEN`) — plan info reaches them only through their own subscription (F14).
+- `GET /plans` accepts only `q` (name contains), `billing_frequency`, `is_active` (`true|false`), `available_on` (`YYYY-MM-DD`), `page`, `page_size`, `sort` (`name`, `price`, `available_from`, `created_at`; default `name`). Anything else → `422`. `available_on=D` returns plans with `is_active = true`, `available_from <= D` and (`available_to` is null or `available_to >= D`); both bounds are inclusive.
+- Request bodies use **flat** policy booleans (`auto_close_on_end`, `allow_early_close`, `allow_pause`, `allow_renewal`); all four are required on `POST`. `min_quantity` defaults to 1, `available_to` to `null` (open-ended), `is_active` to `true`. `price` is a money string (`"499.00"`).
+- `PATCH` validates the date range against the stored values (sending only `available_to` is checked against the stored `available_from`). Policy, `available_to` and `min_quantity` changes never modify existing subscriptions: policies are checked at action time (F10), a past `available_to` only blocks new sales (F09 via `assertPlanAvailable`), and a higher `min_quantity` applies to new/edited lines only.
+- `PUT /plans/:id/products` replaces the whole list in **one transaction** (any failure leaves the previous list intact). Each product must exist and be active; a variant must exist, be active and belong to the row's product; `(product_id, variant_id)` must be unique (two rows without a variant are duplicates). Violations → `422 VALIDATION_ERROR` with `details[]` (`products.<index>.<field>`). Products that become inactive *after* being attached stay on the plan and are returned with `product_is_active: false`.
+- Errors: `404 NOT_FOUND` (missing plan), `409 CONFLICT` (duplicate name), `409 IN_USE` (plan referenced by subscriptions/templates — FK `RESTRICT`; deactivate with `is_active=false` instead), `422 VALIDATION_ERROR`, `403 FORBIDDEN`.
+
+**Plan response shape (consumed by F09, F10, F14 — do not vary per endpoint)**
+
+Every plans endpoint returns the same plan object; `GET /plans/:id`, `POST` and `PATCH` add `products[]`, list rows add `product_count`.
+
+```json
+{ "data": {
+    "id": 3, "name": "Monthly Pro", "price": "499.00", "billing_frequency": "monthly",
+    "min_quantity": 1, "available_from": "2026-01-01", "available_to": null, "is_active": true,
+    "notes": null,
+    "policies": { "auto_close_on_end": true, "allow_early_close": false, "allow_pause": true, "allow_renewal": true },
+    "created_at": "2026-11-08T09:00:00.000Z", "updated_at": "2026-11-08T09:00:00.000Z",
+    "products": [
+      { "id": 11, "product_id": 9, "product_name": "CRM", "product_is_active": true,
+        "variant_id": 7, "variant_label": "Brand: Odoo", "variant_is_active": true,
+        "default_quantity": 2, "unit_price_override": "10.50" } ] } }
+```
+
+| `policies` field | Meaning (checked **at action time**, never stored on subscriptions) | Read by |
+|---|---|---|
+| `auto_close_on_end` | Subscription is closed automatically when it reaches `expiry_date` | F10 expiry job |
+| `allow_early_close` | `active → closed` before expiry is permitted (Admin may override, audited) | F10 `close` |
+| `allow_pause` | Subscription may be paused | F10 `pause` |
+| `allow_renewal` | Subscription may be renewed | F10 `renew` |
+
+`PUT /plans/:id/products` responds `200 { "data": [ <plan product>, … ] }` using the `products[]` element shape above. Other modules should call `assertPlanAvailable(plan, startDate)` (exported from `modules/plans/index.ts`; `422 PLAN_NOT_AVAILABLE` when the plan is inactive or `startDate` is outside the inclusive availability window) rather than re-implementing the rule.
 
 ---
 

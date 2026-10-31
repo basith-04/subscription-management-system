@@ -236,8 +236,10 @@ Purpose: pricing, frequency, availability window, and **plan-level policies** (w
 | allow_renewal | BOOLEAN | NN | default true |
 | notes | TEXT | null | |
 | is_active | BOOLEAN | NN | default true |
+| created_at / updated_at | TIMESTAMPTZ | NN | default `now()`; `updated_at` is set by the service on every change |
 
-Indexes: UQ(name), `(is_active, available_from, available_to)`.
+Constraints (implemented in `20261108090000_f07_plans_and_policies.sql`): `plans_name_key` UNIQUE(name), `plans_availability_range_chk`. Indexes: UQ(name), `plans_availability_idx` on `(is_active, available_from, available_to)` (serves the `available_on` filter).
+Deleting a plan that subscriptions or quotation templates reference fails on their `ON DELETE RESTRICT` FK; the API maps it to `409 IN_USE`.
 
 #### `plan_products`
 Purpose: which products (and optionally a variant) a plan includes, with default quantity/price used to pre-fill subscription lines.
@@ -249,9 +251,10 @@ Purpose: which products (and optionally a variant) a plan includes, with default
 | product_id | BIGINT | NN | FK → products.id |
 | variant_id | BIGINT | null | FK → product_variants.id |
 | default_quantity | INT | NN | default 1 |
-| unit_price_override | NUMERIC(12,2) | null | null = use product price + variant adjustment |
+| unit_price_override | NUMERIC(12,2) | null | null = use product price + variant adjustment; `CHECK (>= 0)` |
+| created_at / updated_at | TIMESTAMPTZ | NN | default `now()` |
 
-Constraints: UQ(plan_id, product_id, variant_id) — note Postgres treats NULLs as distinct; use `UNIQUE NULLS NOT DISTINCT` (PG15+) or `COALESCE(variant_id,0)` in a unique index.
+Constraints: `plan_products_unique_row` — `UNIQUE NULLS NOT DISTINCT (plan_id, product_id, variant_id)` (PostgreSQL 15+; the project targets 16), so two rows with the same product and no variant collide. `default_quantity` `CHECK (>= 1)`. The migration depends on F06's `products` and `product_variants` tables and must be applied after F06's.
 Indexes: `(plan_id)`, `(product_id)`.
 
 #### `tax_rules`

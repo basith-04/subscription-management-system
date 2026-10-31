@@ -634,6 +634,8 @@ Features in the same wave have no hard dependency on each other, so they can be 
 
 | Field | Value |
 |---|---|
+| **Status** | ✅ **Implemented** |
+| **Status** | ✅ **Implemented** |
 | **Prerequisites** | F00 |
 | **Can be developed independently** | Yes |
 | **Order** | W1 |

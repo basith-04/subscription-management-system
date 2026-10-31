@@ -1,1 +1,6 @@
-// Public exports of the products feature (selects, badges). Nothing else is imported from outside. PLACEHOLDER — replace with implementation.
+export type { Product, ProductVariant, PageMeta } from './types'
+export { ProductListPage } from './pages/ProductListPage'
+export { ProductDetailPage } from './pages/ProductDetailPage'
+export { ProductFormPage } from './pages/ProductFormPage'
+export { ProductSelect } from './components/ProductSelect'
+export { VariantSelect } from './components/VariantSelect'
