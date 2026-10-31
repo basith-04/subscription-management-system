@@ -248,6 +248,7 @@ Per-module API clients. Each imports `apiRequest` (and `ApiError`) from `../lib/
 | `payment-terms.ts` | SCAFFOLDED | F05 | Payment terms CRUD. |
 | `discounts.ts` | SCAFFOLDED | F15 | Discount CRUD + grant/revoke. |
 | `invoices.ts` | SCAFFOLDED | F11 | Invoice CRUD + confirm/cancel/send/print. |
+| `billing-runs.ts` | IMPLEMENTED | F12 | Typed client for starting runs and reading run history/upcoming billing. |
 | `billing-runs.ts` | EXISTING | F12 | `POST /billing/runs`, list, detail, upcoming. |
 | `payments.ts` | SCAFFOLDED | F13 | Payment record/void/list. |
 | `portal.ts` | SCAFFOLDED | F14 | `/me/subscriptions`, `/me/invoices` (+ print). |
@@ -276,12 +277,15 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `users` | F03 | `pages/StaffListPage.tsx`; `components/StaffFormModal.tsx`; `hooks/useStaff.ts`. | – |
 | `customers` | F04 | `pages/CustomerListPage.tsx`, `pages/CustomerFormPage.tsx`, `pages/CustomerDetailPage.tsx`; `components/CustomerSelect.tsx` (shared), `components/CustomerForm.tsx`, `components/CustomerProfileCard.tsx`, `components/CustomerDetailSections.tsx` (named slots for F09 subscriptions, F13 invoices and outstanding amounts); `hooks/useCustomers.ts`, `hooks/useDebouncedValue.ts`; `customers.css`, `__tests__/`. The portal `ProfilePage` is `portal/pages/ProfilePage.tsx` (F04; F14 adds the rest of the portal). | `CustomerSelect`. |
 | `products` | F06 | ✅ **IMPLEMENTED.** `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`, `pages/ProductFormPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`. | `ProductSelect`, `VariantSelect`. |
+| `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `routes/PlanListRoute.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
 | `plans` | F07 | ✅ **IMPLEMENTED.** `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
 | `quotation-templates` | F08 | `pages/TemplateListPage.tsx`, `pages/TemplateFormPage.tsx`; `components/LineItemsEditor.tsx` (shared), `components/TemplateSelect.tsx`; `hooks/useTemplates.ts`. | `LineItemsEditor`, `TemplateSelect`. |
 | `subscriptions` | F09, F10 | `pages/QuotationListPage.tsx`, `pages/SubscriptionListPage.tsx`, `pages/SubscriptionDetailPage.tsx`; `components/StatusTimeline.tsx`, `components/SubscriptionStatusBadge.tsx`, `components/SubscriptionActions.tsx`; `hooks/useSubscriptions.ts`, `hooks/useQuotations.ts`. | `SubscriptionStatusBadge`. |
 | `taxes` | F05 | ✅ **IMPLEMENTED.** `pages/TaxListPage.tsx`; `components/TaxSelect.tsx`; `hooks/useTaxes.ts`. | `TaxSelect`. |
 | `payment-terms` | F05 | ✅ **IMPLEMENTED.** `pages/PaymentTermListPage.tsx`; `components/PaymentTermSelect.tsx`; `hooks/usePaymentTerms.ts`. | `PaymentTermSelect`. |
 | `discounts` | F15 | `pages/DiscountListPage.tsx`, `pages/DiscountDetailPage.tsx`; `components/DiscountsPanel.tsx`; `hooks/useDiscounts.ts`. | – |
+| `invoices` | F11 | `pages/InvoiceListPage.tsx`, `pages/InvoiceDetailPage.tsx`, `pages/InvoicePrintPage.tsx`; `components/PaymentStateBadge.tsx`, `components/InvoiceDocument.tsx`; `hooks/useInvoices.ts`. | `PaymentStateBadge`, `InvoiceDocument`. |
+| `billing-runs` | F12 | `pages/BillingRunPage.tsx`; `billing-runs.css`; run history, upcoming-billing summary and admin run-now action. | `BillingRunPage`. |
 | `invoices` | F11 | ✅ **IMPLEMENTED.** `pages/InvoiceListPage.tsx`, `pages/InvoiceDetailPage.tsx`, `pages/InvoicePrintPage.tsx`; `components/PaymentStateBadge.tsx`, `components/InvoiceDocument.tsx`; `hooks/useInvoices.ts`. | `PaymentStateBadge`, `InvoiceDocument`. |
 | `billing-runs` | F12 | ✅ **IMPLEMENTED.** `pages/BillingPage.tsx`, `pages/BillingRunDetailPage.tsx`; `components/RunBillingButton.tsx`; `hooks/useBillingRuns.ts`. | – |
 | `payments` | F13 | `pages/PaymentListPage.tsx`; `components/RecordPaymentDialog.tsx`, `components/AllocationEditor.tsx`; `hooks/usePayments.ts`. | – |
@@ -330,8 +334,8 @@ Generic hooks used by two or more features. Feature hooks live in `features/<f>/
 | File | Status | Owner | Purpose |
 |---|---|---|---|
 | `AuthLayout.tsx` | SCAFFOLDED | F00 | Centered card layout for `/login`, `/register`, `/forgot-password`, `/reset-password`. |
-| `BackOfficeLayout.tsx` | SCAFFOLDED | F00 | Sidebar (from `routes/menu.ts`) + header + content. `RequireAuth` on `/app/*`. |
-| `PortalLayout.tsx` | SCAFFOLDED | F00 | Customer-facing portal chrome. `RequireRole(['customer'])` on `/portal/*`. |
+| `BackOfficeLayout.tsx` | IMPLEMENTED | F00 | Shared paper-cut back-office shell, role-aware navigation, account context and nested route outlet for `/app/*`. |
+| `PortalLayout.tsx` | IMPLEMENTED | F00 | Customer-facing paper-cut portal shell and nested outlet for `/portal/*`. |
 
 ### 2.7 Routing — `frontend/src/routes/`
 

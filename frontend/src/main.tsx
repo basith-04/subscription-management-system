@@ -2,19 +2,25 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthLayout } from './features/auth/AuthLayout'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth, RequireRole } from './features/auth/guards'
-import { AccountShell } from './features/auth/AccountShell'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
+import { BillingRunPage } from './features/billing-runs'
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { PaymentListRoute } from './features/payments'
 import { QuotationCreatePage, QuotationDetailPage, QuotationListPage, SubscriptionDetailPage, SubscriptionListPage } from './features/subscriptions'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
+import { PlanListRoute } from './features/plans/routes/PlanListRoute'
+import { TaxListPage } from './features/taxes'
+import { PaymentTermListPage } from './features/payment-terms'
+import { StaffListPage } from './features/users'
+import { BackOfficeLayout } from './layouts/BackOfficeLayout'
+import { PortalLayout } from './layouts/PortalLayout'
 
 const queryClient = new QueryClient()
 
@@ -28,12 +34,14 @@ createRoot(document.getElementById('root')!).render(
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<RequireRole roles={['customer']} />}>
-          <Route path="/portal" element={<AccountShell area="portal" />}>
+          <Route path="/portal" element={<PortalLayout />}>
+            <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
         </Route>
         <Route element={<RequireRole roles={['admin', 'staff']} />}>
-          <Route path="/app" element={<AccountShell area="app" />}>
+          <Route path="/app" element={<BackOfficeLayout />}>
+            <Route index element={<Navigate to="customers" replace />} />
             <Route path="customers" element={<CustomerListPage />} />
             <Route path="customers/new" element={<CustomerFormPage />} />
             <Route path="customers/:id" element={<CustomerDetailPage />} />
@@ -47,11 +55,18 @@ createRoot(document.getElementById('root')!).render(
             <Route path="subscriptions" element={<SubscriptionListPage />} />
             <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
             <Route path="payments" element={<PaymentListRoute />} />
+            <Route path="billing" element={<BillingRunPage />} />
             <Route path="products" element={<ProductListRoute />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />
             </Route>
             <Route path="products/:id" element={<ProductDetailRoute />} />
+            <Route path="plans" element={<PlanListRoute />} />
+            <Route path="taxes" element={<TaxListPage />} />
+            <Route path="payment-terms" element={<PaymentTermListPage />} />
+            <Route element={<RequireRole roles={['admin']} />}>
+              <Route path="users" element={<StaffListPage />} />
+            </Route>
           </Route>
         </Route>
         {/* Standalone print view: deliberately outside any app chrome. */}
