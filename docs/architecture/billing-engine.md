@@ -1,6 +1,6 @@
 # Business Logic and Billing Engine
 
-> **Status:** Design only. Nothing here is implemented. This is the most important logic in the product: **an invoice must never be created twice for the same period, and a period must never be skipped.**
+> **Status:** Implemented. The F12 billing engine, run orchestration, and API are fully implemented and passing tests. This is the most important logic in the product: **an invoice must never be created twice for the same period, and a period must never be skipped.**
 > Related: [Database Design](../database/database-design.md) · [State Machines](state-machines.md) · [Data Flows](data-flows.md) · [Security](security-and-rbac.md)
 
 ## 1. Big picture
