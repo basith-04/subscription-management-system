@@ -102,7 +102,9 @@ docker compose up --build
 
 Compose starts PostgreSQL, runs the one-off `migrate` service (migrations +
 role seed + optional first admin), then starts the API once the database is
-healthy. Node.js is the default runtime. To build and run the Bun variants
+healthy. Choose a random URL-safe PostgreSQL password (letters, digits, hyphen
+or underscore), because Compose places it in the database URL. The database
+port binds only to localhost. Node.js is the default runtime. To build and run the Bun variants
 instead:
 
 ```bash
