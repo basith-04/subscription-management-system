@@ -9,6 +9,28 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const MIGRATIONS_DIR = path.join(HERE, 'migrations')
 const MIGRATION_LOCK = 7_010_001
 
+// Feature prerequisites are not encoded reliably by historical timestamp names
+// (F07, for example, depends on F06). Keep the runner deterministic while
+// respecting the documented dependency graph on an empty database.
+const FEATURE_ORDER: Record<string, number> = {
+  f00: 0,
+  f02: 1,
+  f05: 2,
+  f06: 3,
+  f07: 4,
+  f08: 5,
+  f09: 6,
+  f11: 7,
+  f12: 8,
+  f13: 9,
+  f15: 10,
+}
+
+function migrationOrder(file: string): [number, string] {
+  const feature = /^\d{14}_(f\d{2})_/.exec(file)?.[1]
+  return [feature ? (FEATURE_ORDER[feature] ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER, file]
+}
+
 async function ensureMigrationTable(pool: Pool): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -38,7 +60,11 @@ export async function runMigrations(
     const files = (await readdir(migrationsDir))
       .filter((file) => file.endsWith('.sql'))
       .filter((file) => !features || features.includes(/^\d{14}_(f\d{2})_/.exec(file)?.[1] ?? ''))
-      .sort()
+      .sort((left, right) => {
+        const [leftOrder, leftName] = migrationOrder(left)
+        const [rightOrder, rightName] = migrationOrder(right)
+        return leftOrder - rightOrder || leftName.localeCompare(rightName)
+      })
 
     for (const file of files) {
       const existing = await pool.query(

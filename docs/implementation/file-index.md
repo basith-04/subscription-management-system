@@ -345,7 +345,7 @@ Generic hooks used by two or more features. Feature hooks live in `features/<f>/
 |---|---|---|---|
 | `api.ts` | **EXISTING** | F00 | The single fetch wrapper. Every `src/api/<module>.ts` imports from it. |
 | `money.ts` | SCAFFOLDED | F00 | Display-only money formatting (₹1,560.00). Never parse to `Number` for arithmetic. |
-| `dates.ts` | SCAFFOLDED | F00 | Display-only date formatting. Wire format stays `YYYY-MM-DD` / ISO-8601. |
+| `dates.ts` | IMPLEMENTED | F00 | Display-only date formatting, including safe ISO/date-only display. Wire format stays `YYYY-MM-DD` / ISO-8601. |
 | `format.ts` | SCAFFOLDED | F00 | Generic display helpers (capitalise, pluralise). |
 | `constants.ts` | SCAFFOLDED | F00 | Cross-feature constants (role names, statuses). Mirrors `backend/src/lib/constants.ts`. |
 | `apply-server-errors.ts` | SCAFFOLDED | F00 | Map `ApiError.details[]` to React Hook Form `setError` calls. |
