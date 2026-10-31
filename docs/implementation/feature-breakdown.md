@@ -426,6 +426,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 
 | Field | Value |
 |---|---|
+| **Status** | ✅ **Implemented** |
 | **Prerequisites** | F00, F01 (needs login to test) |
 | **Can be developed independently** | Yes |
 | **Order** | W2 |

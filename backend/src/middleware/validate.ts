@@ -27,7 +27,17 @@ export function validate(spec: ValidationSpec): RequestHandler {
     try {
       if (spec.body) req.body = spec.body.parse(req.body)
       if (spec.params) req.params = spec.params.parse(req.params) as typeof req.params
-      if (spec.query) req.query = spec.query.parse(req.query) as typeof req.query
+      
+      if (spec.query) {
+        const parsedQuery = spec.query.parse(req.query)
+        // Express 5 makes req.query a read-only getter.
+        // We must use Object.defineProperty to override it safely.
+        Object.defineProperty(req, 'query', {
+          value: parsedQuery,
+          writable: true,
+          configurable: true,
+        })
+      }
       next()
     } catch (error) {
       if (isZodError(error)) {

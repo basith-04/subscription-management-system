@@ -1,6 +1,6 @@
 # API Specification (Contract Draft)
 
-> **Status:** Draft contract. **F06 (Products & variants) endpoints are implemented.** Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
+> **Status:** Draft contract. **F03 (Staff) and F06 (Products & variants) endpoints are implemented.** Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
 > Related: [Database Design](../database/database-design.md) · [State Machines](../architecture/state-machines.md) · [Billing Engine](../architecture/billing-engine.md) · [Security & RBAC](../architecture/security-and-rbac.md)
 
 ## 1. Conventions

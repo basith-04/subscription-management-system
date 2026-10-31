@@ -111,7 +111,7 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | Module | API prefix | Owner | Tables (owned) | Notable extra files / notes |
 |---|---|---|---|---|
 | `auth` | `/auth` | F01 (register/login/me/logout) + F02 (forgot/reset/change) | `password_reset_tokens` (F02) | Two features share the folder; F02 adds its service functions to `auth.service.ts`. |
-| `users` | `/users` | F03 | (uses `users`, `roles` from F00) | Adds `last-admin` guard in `users.service.ts`. |
+| `users` | `/users` | F03 | `users`, `roles` | ✅ **IMPLEMENTED.** Includes last-admin guard and self-deactivation prevention. |
 | `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | Exports `CustomerSelect` on the frontend side. |
 | `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | ✅ **IMPLEMENTED.** Exports `computeEffectivePrice` from `index.ts`. |
 | `plans` | `/plans` | F07 | `plans`, `plan_products` | Exports `assertPlanAvailable` from `index.ts` — F09 uses it. |
@@ -223,7 +223,7 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | Feature folder | Owner | Extra files / subdirs it owns | Public surface (exported) |
 |---|---|---|---|
 | `auth` | F01, F02 | `pages/RegisterPage.tsx`, `pages/LoginPage.tsx` (F01); `pages/ForgotPasswordPage.tsx`, `pages/ResetPasswordPage.tsx` (F02); `components/PasswordField.tsx`, `components/AuthCard.tsx`; `hooks/useAuth.ts` (F01); `context/AuthProvider.tsx` (F01). | `useAuth`, `PasswordField`, `AuthCard`. |
-| `users` | F03 | `pages/StaffListPage.tsx`; `components/StaffFormModal.tsx`; `hooks/useStaff.ts`. | – |
+| `users` | F03 | ✅ **IMPLEMENTED.** `pages/StaffListPage.tsx`. | – |
 | `customers` | F04 | `pages/CustomerListPage.tsx`, `pages/CustomerDetailPage.tsx`; `components/CustomerSelect.tsx` (shared); `hooks/useCustomers.ts`. | `CustomerSelect`. |
 | `products` | F06 | ✅ **IMPLEMENTED.** `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`, `pages/ProductFormPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`. | `ProductSelect`, `VariantSelect`. |
 | `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
@@ -372,7 +372,7 @@ The index respects these from the [Directory Guidelines](../development/director
 
 ## 5. Progress tracking
 
-The scaffold marks every placeholder with the literal token `PLACEHOLDER`. The count is your progress metric. **F06 is merged; its files no longer contain `PLACEHOLDER`.**
+The scaffold marks every placeholder with the literal token `PLACEHOLDER`. The count is your progress metric. **F03 and F06 are merged; their files no longer contain `PLACEHOLDER`.**
 
 ```bash
 # Files still stubbed:
