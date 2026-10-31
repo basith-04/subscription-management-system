@@ -1,1 +1,11 @@
-// Public exports of the portal feature (selects, badges). Nothing else is imported from outside. PLACEHOLDER — replace with implementation.
+// Public exports of the portal feature.
+export { PortalHomePage } from './pages/PortalHomePage'
+export { MySubscriptionsPage } from './pages/MySubscriptionsPage'
+export { MySubscriptionDetailPage } from './pages/MySubscriptionDetailPage'
+export { MyInvoicesPage } from './pages/MyInvoicesPage'
+export { MyInvoiceDetailPage } from './pages/MyInvoiceDetailPage'
+export { ChangePasswordPage } from './pages/ChangePasswordPage'
+export { ProfilePage } from './pages/ProfilePage'
+export { OutstandingSummary } from './components/OutstandingSummary'
+export { SubscriptionCard } from './components/SubscriptionCard'
+export { CustomerActionPanel } from './components/CustomerActionPanel'

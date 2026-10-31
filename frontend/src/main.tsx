@@ -13,7 +13,9 @@ import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './featur
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { PaymentListRoute } from './features/payments'
 import { QuotationCreatePage, QuotationDetailPage, QuotationListPage, SubscriptionDetailPage, SubscriptionListPage } from './features/subscriptions'
-import { ProfilePage } from './features/portal/pages/ProfilePage'
+import { ChangePasswordPage, MyInvoiceDetailPage, MyInvoicesPage, MySubscriptionDetailPage, MySubscriptionsPage, PortalHomePage, ProfilePage } from './features/portal'
+import { PortalNotFound } from './features/portal/components/PortalNotFound'
+import { PortalLayout } from './layouts/PortalLayout'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
 
 const queryClient = new QueryClient()
@@ -28,8 +30,15 @@ createRoot(document.getElementById('root')!).render(
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<RequireRole roles={['customer']} />}>
-          <Route path="/portal" element={<AccountShell area="portal" />}>
+          <Route path="/portal" element={<PortalLayout />}>
+            <Route index element={<PortalHomePage />} />
+            <Route path="subscriptions" element={<MySubscriptionsPage />} />
+            <Route path="subscriptions/:id" element={<MySubscriptionDetailPage />} />
+            <Route path="invoices" element={<MyInvoicesPage />} />
+            <Route path="invoices/:id" element={<MyInvoiceDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="change-password" element={<ChangePasswordPage />} />
+            <Route path="*" element={<PortalNotFound />} />
           </Route>
         </Route>
         <Route element={<RequireRole roles={['admin', 'staff']} />}>

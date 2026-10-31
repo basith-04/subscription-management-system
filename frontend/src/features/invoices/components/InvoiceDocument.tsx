@@ -1,4 +1,4 @@
-import type { InvoiceDetail } from '../types'
+import type { InvoiceDocumentData } from '../types'
 import { InvoiceTotals } from './InvoiceTotals'
 import { Money } from './Money'
 import { PaymentStateBadge } from './PaymentStateBadge'
@@ -13,7 +13,7 @@ function addressLines(address: Record<string, unknown> | null): string[] {
  * The printable invoice. Renders ONLY the invoice's own snapshot (customer, lines, tax, totals) so it is
  * identical for staff today and for the customer portal in F14. React escapes every text node; no HTML is injected.
  */
-export function InvoiceDocument({ invoice }: { invoice: InvoiceDetail }) {
+export function InvoiceDocument({ invoice }: { invoice: InvoiceDocumentData }) {
   const address = addressLines(invoice.customer.billing_address)
   return (
     <article className="invoice-document" aria-label={`Invoice ${invoice.number}`}>
