@@ -30,6 +30,19 @@ const allowedFields = new Set([
   'quotation_valid_until', 'confirmed_at', 'closed_at', 'closed_reason',
 ])
 
+const STATUSES = new Set(['draft', 'quotation', 'confirmed', 'active', 'closed'])
+
+/**
+ * Columns each target status must set with the transition (docs/database/database-design.md §4.5 and
+ * state-machines.md §2.2). `closed` without closed_at violates the table CHECK, so it is rejected up front
+ * instead of surfacing as an opaque database error after the row was locked.
+ */
+const requiredFields: Readonly<Record<string, readonly (keyof SubscriptionTransitionFields)[]>> = {
+  quotation: ['quotation_valid_until'],
+  confirmed: ['confirmed_at'],
+  closed: ['closed_at', 'closed_reason'],
+}
+
 /**
  * Lock and conditionally update one subscription, then audit on the same client.
  * The caller owns BEGIN/COMMIT/ROLLBACK and must check ownership and domain
@@ -46,6 +59,19 @@ export async function transition(options: TransitionOptions): Promise<void> {
     throw new RangeError('Unsupported transition field')
   }
   const entries = suppliedFields.filter(([, value]) => value !== undefined)
+  if (!STATUSES.has(to) || from.some((status) => !STATUSES.has(status)) || from.includes(to)) {
+    throw new RangeError('Invalid transition statuses')
+  }
+  for (const field of requiredFields[to] ?? []) {
+    const value = fields[field]
+    if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+      throw new RangeError(`Transition to ${to} requires ${field}`)
+    }
+  }
+  // closed_* belong only to closing and confirmed_at only to confirming; stray values would corrupt history.
+  if (to !== 'closed' && (fields.closed_at != null || fields.closed_reason != null)) {
+    throw new RangeError('closed_at and closed_reason are only valid when closing')
+  }
 
   const existing = await tx.query<{ status: string }>(
     'SELECT status FROM subscriptions WHERE id = $1 FOR UPDATE',

@@ -49,7 +49,7 @@ describe.skipIf(!databaseUrl)('transition transaction behavior', () => {
   it('rolls back the state update when the audit insert fails', async () => {
     await client.query('BEGIN')
     try {
-      await expect(transition({ tx: client, entity: 'subscriptions', id: 1, from: ['draft'], to: 'quotation', actorUserId: 4, action: 'fail' })).rejects.toThrow()
+      await expect(transition({ tx: client, entity: 'subscriptions', id: 1, from: ['draft'], to: 'quotation', actorUserId: 4, action: 'fail', fields: { quotation_valid_until: '2026-11-01' } })).rejects.toThrow()
     } finally {
       await client.query('ROLLBACK')
     }

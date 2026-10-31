@@ -65,6 +65,8 @@ export function computeLine(input: PriceLineInput): PriceLine {
   if (lineAmount > MAX_MONEY_MINOR) throw new RangeError('Line amount exceeds NUMERIC(12,2)')
   const taxNumerator = lineAmount * rateThousandths(input.tax_rate ?? '0')
   const tax = (taxNumerator + RATE_DENOMINATOR / 2n) / RATE_DENOMINATOR
+  // Invoices and quotes store totals as NUMERIC(12,2), so the tax-inclusive line total must fit as well.
+  if (lineAmount + tax > MAX_MONEY_MINOR) throw new RangeError('Line total exceeds NUMERIC(12,2)')
   return {
     line_amount: fromMinor(lineAmount),
     tax_amount: fromMinor(tax),
@@ -81,6 +83,7 @@ export function computeTotals(inputs: readonly PriceLineInput[]): PriceTotals {
     subtotal += toMinor(line.line_amount)
     estimatedTax += toMinor(line.tax_amount)
   }
+  if (subtotal + estimatedTax > MAX_MONEY_MINOR) throw new RangeError('Total exceeds NUMERIC(12,2)')
   return {
     subtotal: fromMinor(subtotal),
     estimated_tax: fromMinor(estimatedTax),

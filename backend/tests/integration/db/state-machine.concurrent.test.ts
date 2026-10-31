@@ -17,7 +17,7 @@ describe.skipIf(!databaseUrl)('concurrent conditional transitions', () => {
     created = true
     await pool.query(`
       CREATE TABLE ${schema}.subscriptions (
-        id BIGINT PRIMARY KEY, status TEXT NOT NULL, updated_at TIMESTAMPTZ
+        id BIGINT PRIMARY KEY, status TEXT NOT NULL, quotation_valid_until DATE, updated_at TIMESTAMPTZ
       );
       CREATE TABLE ${schema}.audit_logs (
         actor_user_id BIGINT, action TEXT NOT NULL, entity_type TEXT NOT NULL,
@@ -36,7 +36,7 @@ describe.skipIf(!databaseUrl)('concurrent conditional transitions', () => {
     await client.query(`SET search_path TO ${schema}`)
     await client.query('BEGIN')
     try {
-      await transition({ tx: client, entity: 'subscriptions', id: 1, from: ['draft'], to: 'quotation', actorUserId: 1, action: 'subscription.issue' })
+      await transition({ tx: client, entity: 'subscriptions', id: 1, from: ['draft'], to: 'quotation', actorUserId: 1, action: 'subscription.issue', fields: { quotation_valid_until: '2026-11-01' } })
       await client.query('COMMIT')
       return 200
     } catch (error) {

@@ -63,3 +63,16 @@ describe('computeTotals', () => {
     expect(computeLine({ quantity: 1, unit_price: '9999999999.99', tax_rate: '0' }).line_amount).toBe('9999999999.99')
   })
 })
+
+describe('NUMERIC(12,2) ceiling', () => {
+  it('rejects a line whose tax pushes the total over the column limit, but accepts the exact limit', () => {
+    expect(() => computeLine({ quantity: 1, unit_price: '9999999999.99', tax_rate: '0' })).not.toThrow()
+    expect(() => computeLine({ quantity: 1, unit_price: '9999999999.99', tax_rate: '1' })).toThrow(RangeError)
+    expect(computeLine({ quantity: 1, unit_price: '9999999999.99' }).line_total).toBe('9999999999.99')
+  })
+  it('rejects totals whose sum exceeds the limit even when every line fits', () => {
+    const line = { quantity: 1, unit_price: '9999999999.99' }
+    expect(() => computeTotals([line, line])).toThrow(RangeError)
+    expect(() => computeTotals([{ quantity: 1, unit_price: '5000000000.00' }, { quantity: 1, unit_price: '4999999999.99' }])).not.toThrow()
+  })
+})

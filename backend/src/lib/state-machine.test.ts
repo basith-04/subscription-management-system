@@ -59,4 +59,32 @@ describe('transactional transition helper', () => {
     })
     await expect(transition(options)).rejects.toThrow('audit unavailable')
   })
+
+  describe('guards that keep rows consistent with the table CHECKs', () => {
+    it.each([
+      ['closing without closed_at', { to: 'closed', from: ['draft'], fields: { closed_reason: 'cancelled' } }],
+      ['closing without a reason', { to: 'closed', from: ['draft'], fields: { closed_at: new Date() } }],
+      ['closing with a blank reason', { to: 'closed', from: ['draft'], fields: { closed_at: new Date(), closed_reason: '  ' } }],
+      ['confirming without confirmed_at', { to: 'confirmed', from: ['quotation'], fields: {} }],
+      ['issuing without quotation_valid_until', { to: 'quotation', from: ['draft'], fields: {} }],
+      ['an unknown target status', { to: 'bogus', from: ['draft'], fields: {} }],
+      ['an unknown source status', { to: 'quotation', from: ['nope'], fields: { quotation_valid_until: '2026-11-01' } }],
+      ['a no-op transition', { to: 'draft', from: ['draft'], fields: {} }],
+      ['closed_at on a non-closing transition', { to: 'confirmed', from: ['quotation'], fields: { confirmed_at: new Date(), closed_at: new Date() } }],
+    ])('rejects %s before touching the database', async (_name, change) => {
+      const { query, options } = fixture()
+      await expect(transition({ ...options, ...change } as TransitionOptions)).rejects.toThrow(RangeError)
+      expect(query).not.toHaveBeenCalled()
+    })
+
+    it('accepts a well-formed cancel and confirm', async () => {
+      const cancel = fixture('confirmed')
+      await transition({ ...cancel.options, from: ['draft', 'quotation', 'confirmed'], to: 'closed', action: 'subscription.cancel',
+        fields: { closed_at: new Date(), closed_reason: 'cancelled' } })
+      expect(cancel.query.mock.calls[1]?.[0]).toContain('closed_reason =')
+      const confirm = fixture('quotation')
+      await transition({ ...confirm.options, from: ['quotation'], to: 'confirmed', action: 'subscription.confirm', fields: { confirmed_at: new Date() } })
+      expect(confirm.query).toHaveBeenCalledTimes(3)
+    })
+  })
 })
