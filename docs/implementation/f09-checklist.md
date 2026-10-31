@@ -31,8 +31,9 @@ Status: **blocked on prerequisites**. This is not a completed feature.
   F06's existing effective-price helper and integer minor units.
 - [x] Verify 100 tax-rounding cases against PostgreSQL `numeric`; verify the
   `33.33 × 5% = 1.67` case and override precedence with focused unit tests.
-- [x] Implement and test the pure F09 issue/confirm/cancel state-rule table;
-  expiry, ownership, locking and auditing remain service responsibilities.
+- [x] Implement and test the pure F09 issue/confirm/cancel state-rule table and
+  inclusive quotation-validity guard with injected business dates; ownership,
+  timezone selection, locking and auditing remain service responsibilities.
 - [x] Add strict request-shape schemas and unit tests. The schemas are not yet
   mounted; active-record checks, plan policy, ownership and transactional
   validation remain blocked on the missing services and migrations. If both a

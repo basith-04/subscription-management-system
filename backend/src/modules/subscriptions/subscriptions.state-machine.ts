@@ -27,3 +27,17 @@ export function getF09Transition(action: F09SubscriptionAction, current: string)
   }
   return rule.to
 }
+
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000-')) return false
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
+/** `today` is supplied by the business-time-zone clock, never inferred here. */
+export function assertQuotationValidity(validUntil: string | null, today: string): void {
+  if (!isCalendarDate(today)) throw new RangeError('Invalid business date')
+  if (!validUntil || !isCalendarDate(validUntil) || today > validUntil) {
+    throw new ApiError(409, ERROR_CODES.QUOTATION_EXPIRED, 'Quotation has expired')
+  }
+}
