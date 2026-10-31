@@ -92,3 +92,8 @@ export interface InvoiceListParams {
 export interface BulkConfirmResult { confirmed: number[]; failed: Array<{ id: number; code: string }> }
 export interface SendInvoicePayload { to?: string; message?: string }
 export interface UpdateDraftPayload { due_date?: string; notes?: string | null; remove_item_ids?: number[] }
+
+/** The fields InvoiceDocument renders. Staff detail and the portal's allow-listed invoice both satisfy it. */
+export type InvoiceDocumentData = Pick<InvoiceDetail,
+  'number' | 'status' | 'payment_state' | 'subscription' | 'customer' | 'period_start' | 'period_end' | 'issue_date' | 'due_date' |
+  'payment_term' | 'notes' | 'items' | 'tax_details' | 'subtotal' | 'discount_total' | 'tax_total' | 'total' | 'amount_paid' | 'amount_due'>
