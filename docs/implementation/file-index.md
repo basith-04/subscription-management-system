@@ -1,7 +1,7 @@
 # File Index
 
 > One row per file: its purpose, its owning feature, and its current status.
-> **Status:** The scaffold stage. Every entry below is either **EXISTING** (working code that the scaffold did not touch) or **SCAFFOLDED** (placeholder with a one-line docstring and a `PLACEHOLDER` marker).
+> **Status:** The scaffold and F01 backend are partially implemented. Entries marked **EXISTING** have working code; **SCAFFOLDED** entries are placeholders unless otherwise noted.
 > **Companion docs (do not duplicate here):** [Directory Guidelines](../development/directory-guidelines.md) (rules: where code lives, naming, imports, shared files) · [Feature Breakdown](feature-breakdown.md) (ownership model, waves, Definition of Done) · [System Architecture](../architecture/system-architecture.md) (why the pieces fit) · [API Specification](../api/api-specification.md) (the contract each endpoint must match) · [Database Design](../database/database-design.md) (the schema each migration must copy).
 > **This file is additive.** It does not change any of the above.
 
@@ -31,6 +31,28 @@ Three purposes:
 
 ## 1. Backend — `backend/`
 
+| Documentation file | Status | Purpose |
+|---|---|---|
+| `docs/implementation/auth-integration-checklist.md` | EXISTING | F01 gate, manual walkthrough and pending F02/deployment checklist. |
+
+F01 frontend additions: `frontend/src/features/auth/` contains the login and
+registration pages, password field, auth layout, guarded shells, query hook,
+route guards, CSS and component tests. These implement the F01 paths; password
+reset screens remain pending F02.
+
+| F01 frontend file | Status | Purpose |
+|---|---|---|
+| `frontend/src/features/auth/AccountShell.tsx` | EXISTING | Minimal authenticated portal and back-office shells with logout. |
+| `frontend/src/features/auth/AuthLayout.tsx` | EXISTING | Authentication layout and card. |
+| `frontend/src/features/auth/LoginPage.tsx` | EXISTING | Login form and role-based routing. |
+| `frontend/src/features/auth/RegisterPage.tsx` | EXISTING | Customer registration form. |
+| `frontend/src/features/auth/PasswordField.tsx` | EXISTING | Password input and rule checklist. |
+| `frontend/src/features/auth/schemas.ts` | EXISTING | Frontend authentication validation. |
+| `frontend/src/features/auth/guards.tsx` | EXISTING | Authentication and role route guards. |
+| `frontend/src/features/auth/useAuth.ts` | EXISTING | Cached current-user query and safe return paths. |
+| `frontend/src/features/auth/auth.css` | EXISTING | Authentication form styles. |
+| `frontend/src/features/auth/auth.test.tsx` | EXISTING | Authentication component and guard tests. |
+
 ### 1.1 Entry, config and version (EXISTING)
 
 | File | Status | Owner | Purpose |
@@ -38,6 +60,7 @@ Three purposes:
 | `backend/src/app.ts` | EXISTING | F00 | Express app factory; middleware order; `createApp(config)` used by tests. **No business logic here.** |
 | `backend/src/index.ts` | EXISTING | F00 | Bootstrap — reads config, calls `createApp`, listens, wires graceful shutdown. |
 | `backend/src/config.ts` | EXISTING | F00 | The **only** file that reads `process.env`. Extend it when adding env vars. |
+| `backend/src/config.test.ts` | EXISTING | F01 | Production configuration regression tests. |
 | `backend/src/version.ts` | EXISTING | F00 | `VERSION` string surfaced in the health payload. |
 
 ### 1.2 Middleware — `backend/src/middleware/`
@@ -46,25 +69,28 @@ Three purposes:
 |---|---|---|---|---|
 | `error-handler.ts` | EXISTING | F00 | `ApiError`, `notFoundHandler`, `errorHandler`. The **only** place that writes the error envelope. | Extend `ApiError` here; nothing else writes `.json({error…})`. |
 | `request-id.ts` | EXISTING | F00 | Attaches `X-Request-Id` (incoming header or UUID) to every request. | Consumed by `error-handler` for `request_id` in the envelope. |
-| `authenticate.ts` | SCAFFOLDED | F01 | Read session cookie → verify → load user → `req.user = { id, role, customerId? }`; rejects inactive users. | Called by every protected route. |
-| `require-role.ts` | SCAFFOLDED | F01 | `requireRole(...roles)` — `403 FORBIDDEN` when `req.user.role` isn't allowed. | F03 extends with `useCan`-style checks for menus. |
-| `permissions.ts` | SCAFFOLDED | F00 | The **single** permission map for the RBAC matrix ([Security §2](../architecture/security-and-rbac.md)). | Change the security doc first; then this map. |
-| `validate.ts` | SCAFFOLDED | F00 | Zod-driven validation of body/params/query → `422 VALIDATION_ERROR` with `details[]`. | Every non-public endpoint goes through it. |
-| `rate-limit.ts` | SCAFFOLDED | F01 | `express-rate-limit` wrappers: strict for `/auth/*`, moderate globally. | Return codes per [API Spec §1.2](../api/api-specification.md). |
+| `authenticate.ts` | EXISTING | F01 | Verify session cookie and reload user and role from PostgreSQL; rejects inactive users. | Called by protected routes. |
+| `require-role.ts` | EXISTING | F01 | `requireRole(...roles)` — `403 FORBIDDEN` when `req.user.role` isn't allowed. | F03 extends with `useCan`-style checks for menus. |
+| `permissions.ts` | EXISTING | F00 | F01 named permissions and customer scoping from the authenticated identity. | Extend with business permissions as their endpoints are implemented. |
+| `permissions.test.ts` | EXISTING | F01 | Customer scope and authorization regression tests. | Never trust a client-supplied customer id. |
+| `validate.ts` | EXISTING | F00 | Zod-driven validation of body/params/query → `422 VALIDATION_ERROR` with `details[]`. | Every non-public endpoint goes through it. |
+| `rate-limit.ts` | EXISTING | F01 | In-memory rate limiter for credential endpoints. | Global and distributed limiting remain pending. |
 
 ### 1.3 Shared helpers — `backend/src/lib/`
 
 | File | Status | Owner | Purpose | Consumed by |
 |---|---|---|---|---|
-| `db.ts` | SCAFFOLDED | F00 | Database client, `withTransaction(fn)` helper, Postgres error → `AppError` mapping. | Every repository. |
+| `db.ts` | EXISTING | F00 | Database client, transaction helpers and Postgres error mapping. | Every repository. |
 | `money.ts` | SCAFFOLDED | F00 | Decimal-safe money: string arithmetic, `ROUND_HALF_UP` to 2 dp. | Products (F06), plans (F07), billing (F12), payments (F13). |
 | `dates.ts` | SCAFFOLDED | F00 | "Today" in `APP_TIMEZONE`; `YYYY-MM-DD` parsing. | Everywhere dates matter; critical for F12. |
 | `pagination.ts` | SCAFFOLDED | F00 | Parse `page` / `page_size` (max 100), build `meta`; whitelisted sort parsing. | Every list endpoint. |
-| `responses.ts` | SCAFFOLDED | F00 | `ok`, `created`, `list`, `noContent`. The **only** helpers controllers use to write success bodies. | Every controller. |
-| `errors.ts` | SCAFFOLDED | F00 | `AppError` class (status, code, message, details). | Services, middleware. |
-| `error-codes.ts` | SCAFFOLDED | F00 | Central list of error codes, must match [API Spec §1.2](../api/api-specification.md). | Everywhere an error is thrown. |
-| `mailer.ts` | SCAFFOLDED | F00 | Nodemailer wrapper around SMTP (Mailpit locally). Never throws into caller; returns a result. | F02 (reset links), F11 (send invoice). |
-| `audit.ts` | SCAFFOLDED | F00 | `audit.log(tx, {…})` — insert-only audit row writer, runs in the caller's transaction. | Every state-changing service. |
+| `responses.ts` | EXISTING | F00 | `ok`, `created`, `list`, `noContent`. | Every controller. |
+| `errors.ts` | EXISTING | F00 | `ApiError` class (status, code, message, details). | Services, middleware. |
+| `error-codes.ts` | EXISTING | F00 | Central list of error codes. | Everywhere an error is thrown. |
+| `mailer.ts` | EXISTING | F00 | Nodemailer wrapper around SMTP (Mailpit locally). Returns a sanitized result on failure. | F02 (reset links), F11 (send invoice). |
+| `mailer.test.ts` | EXISTING | F00 | SMTP success, failure and configuration regression tests. | Mail infrastructure. |
+| `audit.ts` | EXISTING | F00 | Transactional insert-only audit row writer. | Every state-changing service. |
+| `session.test.ts` | EXISTING | F01 | JWT signature, expiry-claim and algorithm regression tests. | Authentication. |
 | `scheduler.ts` | SCAFFOLDED | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |
 | `state-machine.ts` | SCAFFOLDED | F00 | `transition(entity, from[], to, opts)` — conditional `UPDATE … WHERE status = expected`; `409 INVALID_STATE_TRANSITION` on 0 rows. | `subscriptions.state-machine.ts`, `invoices.state-machine.ts`. |
 | `logger.ts` | SCAFFOLDED | F00 | Request-scoped structured logger. **Never log secrets, passwords, or PII.** | Every layer; don't `console.log`. |
@@ -110,7 +136,7 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 
 | Module | API prefix | Owner | Tables (owned) | Notable extra files / notes |
 |---|---|---|---|---|
-| `auth` | `/auth` | F01 (register/login/me/logout) + F02 (forgot/reset/change) | `password_reset_tokens` (F02) | Two features share the folder; F02 adds its service functions to `auth.service.ts`. |
+| `auth` | `/auth` | F01 (register/login/me/logout) + F02 (forgot/reset/change) | `password_reset_tokens` (F02) | F01 backend implemented; F02 remains pending. |
 | `users` | `/users` | F03 | (uses `users`, `roles` from F00) | Adds `last-admin` guard in `users.service.ts`. |
 | `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | Exports `CustomerSelect` on the frontend side. |
 | `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | ✅ **IMPLEMENTED.** Exports `computeEffectivePrice` from `index.ts`. |
@@ -139,10 +165,15 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 
 ### 1.7 Database — `backend/db/`
 
+| File | Status | Owner | Purpose |
+|---|---|---|---|
+| `backend/db/migrate.test.ts` | EXISTING | F00/F01 | Explicit feature scoping and strict unscoped migration failure regression tests. |
+
 | Path | Status | Owner | Purpose | Notes |
 |---|---|---|---|---|
 | `schema.prisma` | SCAFFOLDED | F00 | Prisma schema — **only** if D-03 selects Prisma. | If D-03 lands on raw SQL, delete the file. Column-by-column must match [DB Design §4](../database/database-design.md). |
-| `migrations/` | SCAFFOLDED (`.gitkeep`) | each feature | One timestamp-named migration per feature, DDL copied **verbatim** from the DB design. | Never edit a merged migration; fix forward. One migration per feature in the order of [Feature Breakdown §5](feature-breakdown.md). |
+| `migrations/` | EXISTING | each feature | Timestamp-named SQL migrations; F00 baseline exists. | Never edit a merged migration; fix forward. |
+| `migrations/20261031010000_f02_password_reset_tokens.sql` | EXISTING | F02 | Adds hashed single-use password reset tokens. | Forward-only. |
 | `seeds/reference/index.ts` | SCAFFOLDED | F00 | Idempotent seed: roles, first admin (from env per D-08), payment terms, sample taxes. | Safe to run in any environment. |
 | `seeds/demo/index.ts` | SCAFFOLDED | F00 | Demo story data for walkthroughs. | Never in production. |
 | `seeds/bulk/index.ts` | SCAFFOLDED | F00 | Bulk performance data (~5,000 subs / ~60,000 invoices) for the <2s criterion. | Used by S2 (Performance). |

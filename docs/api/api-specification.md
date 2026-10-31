@@ -1,6 +1,6 @@
 # API Specification (Contract Draft)
 
-> **Status:** Draft contract. **F06 (Products & variants) endpoints are implemented.** Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
+> **Status:** Draft contract. **F01 authentication** (`register`, `login`, `logout`, `me`) and **F06 (Products & variants)** endpoints are implemented. Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
 > Related: [Database Design](../database/database-design.md) · [State Machines](../architecture/state-machines.md) · [Billing Engine](../architecture/billing-engine.md) · [Security & RBAC](../architecture/security-and-rbac.md)
 
 ## 1. Conventions
@@ -69,13 +69,29 @@ Large tables (invoices, payments, audit logs) may additionally support `cursor` 
 
 | Method | URL | Purpose | Role | Request body | Response | Validation | Specific errors |
 |---|---|---|---|---|---|---|---|
-| POST | `/auth/register` | Customer self-registration (creates user + customer profile, logs in) | P | `{ full_name, email, password, company_name?, phone? }` | `201` `{ data: { user: {id, email, full_name, role}, customer_id } }` + cookie | email valid, trimmed/lowercased, unique; password **length > 8**, ≥1 upper, ≥1 lower, ≥1 special; name 1–120 chars | 409 `EMAIL_ALREADY_EXISTS` |
+| POST | `/auth/register` | Customer self-registration (creates user + customer profile, logs in) | P | `{ full_name, email, password, company_name?, phone? }` | `201` `{ data: { user: {id, email, full_name, role}, customer_id, warnings?: [{field, message}] } }` + cookie | email valid, trimmed/lowercased, unique; password **length > 8**, ≥1 upper, ≥1 lower, ≥1 special; name 1–120 chars | 409 `EMAIL_ALREADY_EXISTS` |
 | POST | `/auth/login` | Log in | P | `{ email, password }` | `200` user object + cookie | both present | 401 `INVALID_CREDENTIALS` (same message for wrong email or password); 403 if account disabled; 429 |
 | POST | `/auth/logout` | Clear cookie | Any | — | `204` | — | — |
 | GET | `/auth/me` | Current user, role, permissions | Any | — | `{ data: { id, email, full_name, role, customer_id? } }` | — | 401 |
 | POST | `/auth/forgot-password` | Email a reset link | P | `{ email }` | `200` always `{ data: { message } }` (never reveals if the email exists) | email format | 429 |
 | POST | `/auth/reset-password` | Set a new password using the emailed token | P | `{ token, new_password }` | `200` | token valid, unexpired, unused; password rules as above | 400 `INVALID_OR_EXPIRED_TOKEN` |
 | POST | `/auth/change-password` | Change own password | Any | `{ current_password, new_password }` | `200` | current password correct; new ≠ current; rules | 401/422 |
+
+**Implementation notes (F01).** `register`, `login`, `logout` and `me` are
+implemented under `/api/v1/auth`. Registration always assigns the `customer`
+role server-side; privilege fields such as `role`, `role_id`, `customer_id`,
+`is_active` and `password_hash` are rejected with `422`. Passwords are stored as
+Argon2id hashes and must be 9–128 characters with at least one upper, lower and
+special character (and must not equal the email). Sessions are signed JWTs in an
+`HttpOnly`, `SameSite=Lax` cookie (`Secure` in production) with an 8-hour
+lifetime; every request reloads the user and rejects deleted or deactivated
+accounts. `logout` clears the cookie and writes an audit row. Password reset and
+change-password are not implemented yet.
+
+D-09: when another customer record already has the supplied email, registration
+creates a new linked customer rather than linking the existing record. The
+response includes a non-blocking `warnings` entry for `email`; this deliberately
+reveals that another customer record has that email and is a best-effort check.
 
 ---
 

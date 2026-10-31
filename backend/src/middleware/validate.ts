@@ -1,42 +1,53 @@
-// Zod request validation — converts issues to 422 VALIDATION_ERROR with field details.
 import type { RequestHandler } from 'express'
-import type { ZodType } from 'zod'
-import { ApiError } from './error-handler.js'
+import { ZodError, type ZodType } from 'zod'
+import { ApiError, type FieldError } from '../lib/errors.js'
+import { ERROR_CODES } from '../lib/error-codes.js'
 
-export interface ValidationSpec {
+export interface ValidationSchemas {
   body?: ZodType
-  params?: ZodType
   query?: ZodType
+  params?: ZodType
 }
 
-interface ZodLikeError {
-  issues: Array<{ path: (string | number)[]; message: string }>
+function toFieldErrors(error: ZodError): FieldError[] {
+  return error.issues.map((issue) => ({
+    field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+    message: issue.message,
+  }))
 }
 
-function isZodError(error: unknown): error is ZodLikeError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'issues' in error &&
-    Array.isArray((error as { issues: unknown }).issues)
-  )
-}
-
-export function validate(spec: ValidationSpec): RequestHandler {
+/**
+ * Parse and replace request input with the validated value. Unknown fields are
+ * rejected when the module schema is strict.
+ */
+export function validate(schemas: ValidationSchemas): RequestHandler {
   return (req, _res, next) => {
     try {
-      if (spec.body) req.body = spec.body.parse(req.body)
-      if (spec.params) req.params = spec.params.parse(req.params) as typeof req.params
-      if (spec.query) req.query = spec.query.parse(req.query) as typeof req.query
+      if (schemas.body) {
+        req.body = schemas.body.parse(req.body)
+      }
+      if (schemas.query) {
+        // Express 5 exposes query as a getter; shadow it with the validated value.
+        const query = schemas.query.parse(req.query)
+        Object.defineProperty(req, 'query', { value: query, writable: true, configurable: true, enumerable: true })
+      }
+      if (schemas.params) {
+        req.params = schemas.params.parse(req.params) as typeof req.params
+      }
       next()
     } catch (error) {
-      if (isZodError(error)) {
-        const details = error.issues.map((issue) => ({
-          field: issue.path.join('.') || '(root)',
-          message: issue.message,
-        }))
-        return next(new ApiError(422, 'VALIDATION_ERROR', 'Invalid input', details))
+      if (error instanceof ZodError) {
+        next(
+          new ApiError(
+            422,
+            ERROR_CODES.VALIDATION_ERROR,
+            'Invalid input',
+            toFieldErrors(error),
+          ),
+        )
+        return
       }
+
       next(error)
     }
   }

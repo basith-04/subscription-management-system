@@ -33,12 +33,15 @@ Do not silently invent a different contract.
   without a documented decision.
 - Validate request bodies and query parameters with Zod. Keep schemas next to
   the feature that owns them.
-- Keep the service runnable with `npm run dev` (or `bun run dev:bun`) and no
-  external services for the base scaffold.
+- The API requires PostgreSQL. Run `npm run db:migrate` and `npm run db:seed`
+  before `npm run dev` (or the Bun equivalents).
 - No secrets in the repository. Configuration comes from environment variables
   through `src/config.ts`.
-- Docker: `Dockerfile` exposes `node` and `bun` targets. `docker-compose.yml`
-  selects one via `RUNTIME=node|bun`. Keep both targets working.
+- Docker: `Dockerfile` exposes `node`, `bun` and `migrate` targets.
+  `docker-compose.yml` selects a runtime via `RUNTIME=node|bun` and runs the
+  migration target before the API starts. Keep every target working.
+- F01 authentication is implemented in `src/modules/auth/`. Do not add a second
+  auth stack (for example OIDC or a separate session service); extend this one.
 
 ## Commands
 
@@ -48,9 +51,12 @@ npm install
 npm run dev        # tsx watch src/index.ts
 npm run build      # tsc -p tsconfig.json
 npm start          # node dist/index.js
-npm test           # vitest run
+npm test           # vitest run (needs TEST_DATABASE_URL)
 npm run typecheck  # tsc --noEmit -p tsconfig.test.json
-npm run lint       # oxlint src tests
+npm run lint       # oxlint src tests db
+npm run db:migrate # apply pending SQL migrations
+npm run db:seed    # roles + optional first admin (D-08)
+npm run db:reset   # destructive; development only
 
 # Bun
 bun install
@@ -60,16 +66,21 @@ bun run build:bun  # bun build src/index.ts
 bun run test
 bun run typecheck
 bun run lint
+bun run db:migrate:bun
+bun run db:seed:bun
 ```
 
 Always run lint, typecheck, and tests under both runtimes when practical (CI
-does this). Add or update tests for new behaviour.
+does this). Integration tests need a real PostgreSQL database and use
+`TEST_DATABASE_URL`; they run migrations and truncate their own data, so never
+point them at a shared database. Add or update tests for new behaviour.
 
 Docker:
 
 ```bash
-docker build --target node -t brightloop-api:node .
-docker build --target bun  -t brightloop-api:bun  .
+docker build --target node    -t brightloop-api:node .
+docker build --target bun     -t brightloop-api:bun .
+docker build --target migrate -t brightloop-api:migrate .
 ```
 
 ## Layout rules
@@ -77,11 +88,16 @@ docker build --target bun  -t brightloop-api:bun  .
 - `src/app.ts` — Express app factory. No `listen()` here; tests import it.
 - `src/index.ts` — bootstrap, listener, graceful shutdown. Wiring only.
 - `src/config.ts` — environment parsing and validated configuration.
-- `src/middleware/` — cross-cutting Express middleware.
+- `src/lib/` — shared infrastructure: database pool/transactions, errors,
+  responses, password hashing, sessions, audit writer.
+- `src/middleware/` — cross-cutting Express middleware (auth, validation,
+  roles, rate limiting, errors).
 - `src/routes/` — route registration; keep handlers thin.
-- Add feature modules under `src/features/<feature>/` (or
-  `src/modules/<feature>/`) with `routes`, `service`, and `repository` files.
-  Pick one convention and stay consistent.
+- `db/` — forward-only SQL migrations, reference seeds, and their runners. Add a
+  new timestamped migration for every schema change; never edit an applied one.
+- Feature modules live under `src/modules/<feature>/` with `routes`,
+  `controller`, `service`, `repository` and `schemas` files. Other modules import
+  only the module's `index.ts`.
 - Routes translate HTTP to service calls; services enforce business rules;
   repositories own SQL. Do not put SQL in route handlers.
 - Prefer typed errors (`ApiError`) and let the central error handler produce the
@@ -103,6 +119,9 @@ docker build --target bun  -t brightloop-api:bun  .
   `q`. Reject unknown filters/sorts with `422`.
 - Auth: `httpOnly` session cookie. Never return tokens to JavaScript-accessible
   storage. Enforce role checks on the server for every protected route.
+- Sessions are stateless signed JWTs; `logout` clears the cookie but cannot
+  revoke an already-issued token server-side. Reload the user from the database
+  on every request so deactivation takes effect immediately.
 
 ## Domain rules
 
@@ -118,10 +137,14 @@ docker build --target bun  -t brightloop-api:bun  .
 
 ## Testing
 
-- Unit tests for business rules and state transitions.
-- Integration tests for HTTP handlers, envelopes, and status codes.
-- Use `createApp(...)` + Supertest (see `tests/health.test.ts`).
+- Unit tests for business rules and state transitions live next to the code as
+  `*.test.ts` (for example `src/modules/auth/auth.service.test.ts`).
+- Integration tests for HTTP handlers, envelopes, and status codes live under
+  `tests/integration/<module>/`.
+- Use `createApp(...)` + Supertest (see `tests/integration/auth/auth.api.test.ts`).
 - Cover money rounding, duplicate-invoice prevention, and permission failures.
+- Never assert that audit rows or responses contain passwords, hashes, tokens or
+  cookies.
 
 ## Git
 

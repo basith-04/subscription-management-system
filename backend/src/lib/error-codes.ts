@@ -1,1 +1,21 @@
-// Central list of API error codes matching docs/api/api-specification.md §1.2. PLACEHOLDER — replace with implementation.
+/**
+ * Error codes from docs/api/api-specification.md §1.2.
+ * Add a code to the specification before using it here.
+ */
+export const ERROR_CODES = {
+  BAD_REQUEST: 'BAD_REQUEST',
+  MALFORMED_JSON: 'MALFORMED_JSON',
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  SESSION_EXPIRED: 'SESSION_EXPIRED',
+  FORBIDDEN: 'FORBIDDEN',
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+  EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
+  IN_USE: 'IN_USE',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  RATE_LIMITED: 'RATE_LIMITED',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+} as const
+
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES]
