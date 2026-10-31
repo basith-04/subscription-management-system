@@ -197,6 +197,7 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | Path | Status | Owner | Purpose |
 |---|---|---|---|
 | `health.test.ts` | **EXISTING** | F00 | Smoke test that `createApp()` responds to health checks. |
+| `auth-forgery.test.ts` | EXISTING | F00 / F09 | Reject forged role and bearer credentials on protected integrated routes. |
 | `setup.ts` | SCAFFOLDED | F00 | Apply migrations, truncate between test files, close the pool at the end. |
 | `helpers/login-as.ts` | SCAFFOLDED | F00 | `loginAs(role)` — returns a supertest agent with a session cookie for a test user. |
 | `helpers/clock.ts` | SCAFFOLDED | F00 | Injectable clock — needed by F10/F12 tests. |

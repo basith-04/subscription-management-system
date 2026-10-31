@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction, RequestHandler } from 'express'
+import type { RequestHandler } from 'express'
 import { loadConfig, type Config } from '../config.js'
 import type { AuthUser } from '../lib/auth-user.js'
 import { ApiError } from '../lib/errors.js'
@@ -81,47 +81,7 @@ export function createAuthenticate({
 }
 
 /** Compatibility entry point for routes using the shared F00/F01 middleware. */
-export const authenticate: RequestHandler = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  // Check for test/custom auth header or demo role simulation
-  const roleHeader = (req.header('x-user-role') || req.headers['x-user-role']) as Role | undefined
-  const idHeader = req.header('x-user-id') || (req.headers['x-user-id'] as string | undefined)
-  const emailHeader = req.headers['x-user-email'] as string | undefined
-  const nameHeader = req.headers['x-user-name'] as string | undefined
-
-  if (roleHeader && (roleHeader === 'admin' || roleHeader === 'staff' || roleHeader === 'customer')) {
-    const parsedId = idHeader ? (Number.isNaN(Number(idHeader)) ? 1 : Number(idHeader)) : 1
-    req.user = {
-      id: parsedId,
-      email: emailHeader ?? `${roleHeader}@brightloop.io`,
-      full_name: nameHeader ?? `${roleHeader.toUpperCase()} User`,
-      role: roleHeader,
-      customer_id: null,
-    }
-    return next()
-  }
-
-  // Check Authorization Bearer header if provided
-  const authHeader = req.headers.authorization
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    if (token === 'admin-token') {
-      req.user = { id: 1, email: 'admin@brightloop.io', full_name: 'Admin User', role: 'admin', customer_id: null }
-      return next()
-    }
-    if (token === 'staff-token') {
-      req.user = { id: 2, email: 'staff@brightloop.io', full_name: 'Staff User', role: 'staff', customer_id: null }
-      return next()
-    }
-    if (token === 'customer-token') {
-      req.user = { id: 3, email: 'customer@brightloop.io', full_name: 'Customer User', role: 'customer', customer_id: null }
-      return next()
-    }
-  }
-
+export const authenticate: RequestHandler = (req, res, next) => {
   try {
     const config = loadConfig()
     return createAuthenticate({

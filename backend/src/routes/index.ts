@@ -3,7 +3,7 @@ import type { Config } from '../config.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
 import type { AuthService } from '../modules/auth/auth.service.js'
 import { createCustomersRouter, createMeRouter } from '../modules/customers/customers.routes.js'
-import { createPlansRouter } from '../modules/plans/plans.routes.js'
+import { createPlansRouter, plansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
 import { taxesRouter } from '../modules/taxes/index.js'
@@ -51,14 +51,8 @@ export function createApiRouter({
     '/auth',
     createAuthRouter({ service: authService, config, authenticate }),
   )
-  // F05 config
-  router.use('/plans', plansRouter)
-  router.use('/products', productsRouter)
-  router.use('/variants', variantsRouter)
-  router.use('/users', usersRouter)
   router.use('/taxes', taxesRouter)
   router.use('/payment-terms', paymentTermsRouter)
-  // main's config
   router.use('/customers', createCustomersRouter(authenticate))
   router.use('/me', createMeRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))
@@ -66,7 +60,6 @@ export function createApiRouter({
   router.use('/variants', variantsRouter)
   router.use('/users', usersRouter)
 
- 
   return router
 }
 

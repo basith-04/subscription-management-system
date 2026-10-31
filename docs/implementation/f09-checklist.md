@@ -9,11 +9,16 @@ Status: **blocked on prerequisites**. This is not a completed feature.
 - [x] Identify the existing F06 `computeEffectivePrice`, F07
   `assertPlanAvailable`, shared money helper, auth middleware and audit writer.
 - [x] F04: merge the customer implementation and `CustomerSelect` from main.
-- [ ] F05: implement and integrate tax rules and payment terms, their migrations,
-  active-record lookups and selectors. Main currently contains placeholders;
-  [PR #12](https://github.com/basith-04/subscription-management-system/pull/12)
-  is open and should be reviewed and merged by its owner first. Its shared auth,
-  database and frontend-context changes require integration review.
+- [ ] F05: [PR #12](https://github.com/basith-04/subscription-management-system/pull/12)
+  is merged, including migrations and selectors, but F05's API repositories use
+  an in-memory database rather than PostgreSQL. On an isolated F00/F05 database,
+  the migrations and seeds applied, but a tax created through the F05 API had no
+  matching database row. F09 cannot safely reference F05 records until the
+  implementation is integrated with PostgreSQL and its tests use real sessions.
+- [x] Remove the F05 merge's untrusted role-header and hardcoded bearer-token
+  authentication bypass; verify protected routes reject forged credentials.
+- [ ] Replace F05's parallel frontend demo auth context with the existing
+  database-backed session state and verify its real Admin/Staff role behavior.
 - [ ] F08: integrate quotation template migrations, `getTemplateForUse`,
   `TemplateSelect` and `LineItemsEditor`. Main currently has placeholders and
   no F08 migration or editor.
@@ -66,7 +71,7 @@ Status: **blocked on prerequisites**. This is not a completed feature.
 
 ## Preflight evidence
 
-At `origin/main` commit `6feb0ec`, backend typecheck, lint and build pass (lint
+At `origin/main` commit `6feb0ec`, backend typecheck, lint and build passed (lint
 has an existing unused-import warning). The full backend suite against an
 isolated PostgreSQL 16 database reports 186 passing tests and three failing F06
 product tests because those tests send demo headers rather than session cookies.
@@ -74,3 +79,6 @@ Frontend tests pass (42), while its build fails because `StaffListPage.tsx` has
 an unused `navigate` parameter. The unscoped migration runner previously failed
 on an empty PostgreSQL 16 database because both baseline migrations create
 `roles`; neither migration changed in the F04 merge. These failures predate F09.
+The F05 merge (`20bbdd2`) reintroduced an invalid `plansRouter` reference; F09
+corrects the route registry locally. F05's tests still rely on spoofed role
+headers and must be migrated to genuine sessions as part of F05 integration.
