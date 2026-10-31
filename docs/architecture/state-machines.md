@@ -57,6 +57,14 @@ The five states in `subscriptions.status` are exactly the official ones; we add 
 
 **Not allowed (rejected with HTTP 409):** any transition not in the table, e.g. `draft → active`, `quotation → active`, `active → draft`, `closed → anything`.
 
+F09's pure quotation rule table lives in
+`backend/src/modules/subscriptions/subscriptions.state-machine.ts`. It maps
+issue, confirm and pre-activation cancel to their permitted states. It does not
+perform database updates or enforce ownership, validity or concurrency; the
+F09 service must apply those guards and the shared transactional transition
+helper. The shared helper and service integration are still pending. F10 must
+extend the same subscription state-machine module for later lifecycle actions.
+
 ### 2.3 Pause and renewal **[Proposed]** — operations, not states
 
 The problem statement lists pause/renew as plan capabilities but does not add states for them. To keep the required lifecycle intact:

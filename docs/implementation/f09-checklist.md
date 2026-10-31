@@ -17,8 +17,8 @@ Status: **blocked on prerequisites**. This is not a completed feature.
 - [ ] F08: integrate quotation template migrations, `getTemplateForUse`,
   `TemplateSelect` and `LineItemsEditor`. Main currently has placeholders and
   no F08 migration or editor.
-- [ ] F00/F09: implement the shared conditional transition helper and F09-owned
-  subscription state machine once their integration contract is coordinated.
+- [ ] F00/F09: implement the shared conditional transition helper and wire the
+  F09 rule table into transactional services once coordinated.
 - [ ] Repair remaining main baseline defects before end-to-end work: frontend
   `StaffListPage` fails typecheck; F06 product tests use obsolete demo identity
   headers; the two identity baselines both create `roles`/`users`, and the F07
@@ -31,6 +31,8 @@ Status: **blocked on prerequisites**. This is not a completed feature.
   F06's existing effective-price helper and integer minor units.
 - [x] Verify 100 tax-rounding cases against PostgreSQL `numeric`; verify the
   `33.33 × 5% = 1.67` case and override precedence with focused unit tests.
+- [x] Implement and test the pure F09 issue/confirm/cancel state-rule table;
+  expiry, ownership, locking and auditing remain service responsibilities.
 - [ ] Wire pricing into creation, editing and detail responses when F09's
   transaction boundaries and F05/F08 contracts are available.
 
