@@ -192,7 +192,7 @@ flowchart TD
 flowchart TD
     A[Payment entry] --> B{Validate input}
     B -- invalid --> E1[422]
-    B -- ok --> C[BEGIN; lock invoice rows FOR UPDATE]
+    B -- ok --> C[BEGIN, lock invoice rows FOR UPDATE]
     C --> D{Invoice confirmed?<br/>allocation ≤ amount_due?<br/>Σ allocations ≤ payment amount?}
     D -- no --> E2[409 / 422 rollback]
     D -- yes --> F[INSERT payments]
@@ -278,7 +278,7 @@ flowchart TD
     F --> G[audit + optional email]
     R --> K
     K -- yes and expired --> H[Close: closed_reason = expired<br/>next_billing_date = NULL]
-    K -- no --> I[Leave active; flag Expired - action needed<br/>no further invoices]
+    K -- no --> I[Leave active, flag Expired - action needed<br/>no further invoices]
 ```
 
 **Processing**
@@ -309,7 +309,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Customer logs in] --> B[Cookie set; role = customer]
+    A[Customer logs in] --> B[Cookie set, role = customer]
     B --> C[Request GET /me/subscriptions]
     C --> D{Authenticated?}
     D -- no --> E1[401]
