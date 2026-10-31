@@ -34,6 +34,7 @@ export interface RegisterResult {
     role: string
   }
   customer_id: number
+  warnings?: Array<{ field: string; message: string }>
 }
 
 export interface LoginResult {
@@ -98,6 +99,7 @@ export function createAuthService({
             )
           }
 
+          const duplicateCustomerEmail = await repo.customerEmailExists(tx, email)
           const user = await repo.insertUser(tx, {
             role_id: role.id,
             email,
@@ -122,7 +124,7 @@ export function createAuthService({
             ipAddress: meta.ipAddress ?? null,
           })
 
-          return { user, customer }
+          return { user, customer, duplicateCustomerEmail }
         })
 
         const token = await signSessionToken(
@@ -139,6 +141,7 @@ export function createAuthService({
             role: 'customer',
           },
           customer_id: created.customer.id,
+          ...(created.duplicateCustomerEmail ? { warnings: [{ field: 'email', message: 'Another customer record uses this email. It was not linked to your account.' }] } : {}),
         }
       } catch (error) {
         mapDbError(error)

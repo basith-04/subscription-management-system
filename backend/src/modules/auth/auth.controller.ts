@@ -43,6 +43,7 @@ export function createAuthController({
       created(res, {
         user: result.user,
         customer_id: result.customer_id,
+        ...(result.warnings ? { warnings: result.warnings } : {}),
       })
     },
 

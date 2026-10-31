@@ -9,6 +9,7 @@ import { ApiError, apiRequest } from '../../lib/api'
 import { LoginPage } from './LoginPage'
 import { RegisterPage } from './RegisterPage'
 import { RequireAuth, RequireRole } from './guards'
+import { AccountShell } from './AccountShell'
 import { safeReturnPath } from './useAuth'
 
 vi.mock('../../lib/api', async (original) => {
@@ -101,6 +102,15 @@ describe('login', () => {
 })
 
 describe('route guards', () => {
+  it('shows a non-blocking customer email warning on the portal', async () => {
+    mockedRequest.mockResolvedValue({ id: 1, email: 'customer@example.com', full_name: 'Customer', role: 'customer', customer_id: 1 })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[{ pathname: '/portal', state: { warnings: [{ field: 'email', message: 'Existing customer not linked.' }] } }]}><Routes>
+      <Route path="/portal" element={<AccountShell area="portal" />} />
+    </Routes></MemoryRouter></QueryClientProvider>)
+    expect(await screen.findByRole('status')).toHaveTextContent('Existing customer not linked.')
+  })
+
   it('blocks a customer from the back office', async () => {
     mockedRequest.mockResolvedValue({ id: 1, email: 'customer@example.com', full_name: 'Customer', role: 'customer', customer_id: 1 })
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

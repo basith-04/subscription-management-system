@@ -69,7 +69,7 @@ Large tables (invoices, payments, audit logs) may additionally support `cursor` 
 
 | Method | URL | Purpose | Role | Request body | Response | Validation | Specific errors |
 |---|---|---|---|---|---|---|---|
-| POST | `/auth/register` | Customer self-registration (creates user + customer profile, logs in) | P | `{ full_name, email, password, company_name?, phone? }` | `201` `{ data: { user: {id, email, full_name, role}, customer_id } }` + cookie | email valid, trimmed/lowercased, unique; password **length > 8**, ≥1 upper, ≥1 lower, ≥1 special; name 1–120 chars | 409 `EMAIL_ALREADY_EXISTS` |
+| POST | `/auth/register` | Customer self-registration (creates user + customer profile, logs in) | P | `{ full_name, email, password, company_name?, phone? }` | `201` `{ data: { user: {id, email, full_name, role}, customer_id, warnings?: [{field, message}] } }` + cookie | email valid, trimmed/lowercased, unique; password **length > 8**, ≥1 upper, ≥1 lower, ≥1 special; name 1–120 chars | 409 `EMAIL_ALREADY_EXISTS` |
 | POST | `/auth/login` | Log in | P | `{ email, password }` | `200` user object + cookie | both present | 401 `INVALID_CREDENTIALS` (same message for wrong email or password); 403 if account disabled; 429 |
 | POST | `/auth/logout` | Clear cookie | Any | — | `204` | — | — |
 | GET | `/auth/me` | Current user, role, permissions | Any | — | `{ data: { id, email, full_name, role, customer_id? } }` | — | 401 |
@@ -87,6 +87,11 @@ special character (and must not equal the email). Sessions are signed JWTs in an
 lifetime; every request reloads the user and rejects deleted or deactivated
 accounts. `logout` clears the cookie and writes an audit row. Password reset and
 change-password are not implemented yet.
+
+D-09: when another customer record already has the supplied email, registration
+creates a new linked customer rather than linking the existing record. The
+response includes a non-blocking `warnings` entry for `email`; this deliberately
+reveals that another customer record has that email and is a best-effort check.
 
 ---
 

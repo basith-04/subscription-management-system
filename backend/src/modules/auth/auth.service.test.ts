@@ -57,6 +57,10 @@ function createFakeRepository() {
       return state.users.find((user) => user.email === email) ?? null
     },
 
+    async customerEmailExists(_tx, email) {
+      return state.customers.some((customer) => customer.email === email)
+    },
+
     async findUserById(_tx, id) {
       return state.users.find((user) => user.id === id) ?? null
     },

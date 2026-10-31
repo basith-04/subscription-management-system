@@ -20,9 +20,9 @@ export function RegisterPage() {
   const submit = handleSubmit(async (input) => {
     setMessage('')
     try {
-      await apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(input) })
+      const result = await apiRequest<{ warnings?: Array<{ field: string; message: string }> }>('/auth/register', { method: 'POST', body: JSON.stringify(input) })
       await client.fetchQuery({ queryKey: meKey, queryFn: getMe, staleTime: 0 })
-      navigate('/portal', { replace: true })
+      navigate('/portal', { replace: true, state: { warnings: result.warnings } })
     } catch (error) {
       if (error instanceof ApiError && error.code === 'EMAIL_ALREADY_EXISTS') {
         setError('email', { message: error.message })

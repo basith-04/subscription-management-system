@@ -64,6 +64,7 @@ export interface AuthRepository {
   findRoleByName(tx: Queryable, name: string): Promise<RoleRecord | null>
   findUserByEmail(tx: Queryable, email: string): Promise<UserRecord | null>
   findUserById(tx: Queryable, id: number): Promise<UserRecord | null>
+  customerEmailExists(tx: Queryable, email: string): Promise<boolean>
   insertUser(
     tx: Queryable,
     input: InsertUserInput,
@@ -126,6 +127,14 @@ export function createAuthRepository(pool: Pool): AuthRepository {
       )
       const row = result.rows[0]
       return row ? mapUser(row) : null
+    },
+
+    async customerEmailExists(tx, email) {
+      const result = await tx.query<{ exists: boolean }>(
+        'SELECT EXISTS (SELECT 1 FROM customers WHERE email = $1) AS exists',
+        [email],
+      )
+      return result.rows[0]?.exists ?? false
     },
 
     async findUserById(tx, id) {

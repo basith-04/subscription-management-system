@@ -76,6 +76,21 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
   })
 
   describe('POST /api/v1/auth/register', () => {
+    it('warns about a pre-existing customer without linking that record', async () => {
+      const existing = await pool.query<{ id: string }>(
+        "INSERT INTO customers (name, email) VALUES ('Existing Customer', $1) RETURNING id",
+        [registration.email.toUpperCase()],
+      )
+      const response = await request(app).post('/api/v1/auth/register').send(registration)
+      expect(response.status).toBe(201)
+      expect(response.body.data.warnings).toEqual([expect.objectContaining({ field: 'email' })])
+      const rows = await pool.query<{ id: string; user_id: string | null }>('SELECT id, user_id FROM customers ORDER BY id')
+      expect(rows.rows).toHaveLength(2)
+      expect(rows.rows[0]).toMatchObject({ id: existing.rows[0]?.id, user_id: null })
+      expect(Number(rows.rows[1]?.id)).toBe(response.body.data.customer_id)
+      expect(Number(rows.rows[1]?.user_id)).toBe(response.body.data.user.id)
+    })
+
     it('creates one user and one linked customer and stores only a hash', async () => {
       const response = await request(app)
         .post('/api/v1/auth/register')
