@@ -10,3 +10,6 @@ export { renderInvoiceHtml } from './invoices.document.js'
 export { get as getInvoice } from './invoices.service.js'
 export type { InvoiceDetailDto, InvoiceListItemDto } from './invoices.service.js'
 export { createInvoicesRouter } from './invoices.routes.js'
+// Payment-service entry points (F13 only): lock + apply paid amount through the invoice state machine.
+export { lockInvoicesForPayment, activeAllocationTotal, applyPaidAmount } from './invoices.payment-sync.js'
+export type { PaymentInvoiceRow, AppliedBalance } from './invoices.payment-sync.js'

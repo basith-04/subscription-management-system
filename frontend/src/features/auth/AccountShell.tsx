@@ -33,6 +33,7 @@ export function AccountShell({ area }: { area: 'portal' | 'app' }) {
       {area === 'app' && <nav aria-label="Back office">
         <Link to="/app/customers">Customers</Link>
         <Link to="/app/invoices">Invoices</Link>
+        <Link to="/app/payments">Payments</Link>
         <Link to="/app/products">Products</Link>
       </nav>}
       {area === 'portal' && <p><Link to="/portal/profile">My profile</Link></p>}

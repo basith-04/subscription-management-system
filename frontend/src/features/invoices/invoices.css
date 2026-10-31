@@ -94,3 +94,16 @@ button.invoice-danger { background: #a31f17 !important; border-color: #a31f17 !i
   .invoice-print { background: #fff; padding: 0; min-height: 0; }
   .invoice-document { width: auto; margin: 0; padding: 0; border: 0; }
 }
+
+/* F13 payments additions */
+.payment-voided td { color: #6b3a36; text-decoration: line-through; }
+.payment-voided td:last-child, .payment-voided td[data-label="Status"] { text-decoration: none; }
+.alloc-editor { border: 1px solid #c8d2dc; border-radius: .5rem; padding: .6rem; }
+.alloc-editor table { width: 100%; border-collapse: collapse; }
+.alloc-editor th, .alloc-editor td { text-align: left; padding: .3rem; }
+.alloc-editor .num { text-align: right; }
+.alloc-totals { display: flex; gap: 1.5rem; margin: .5rem 0; }
+.alloc-totals div { display: flex; flex-direction: column; }
+.alloc-totals dt { font-size: .75rem; text-transform: uppercase; color: #556; }
+.alloc-totals dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.alloc-confirm { display: flex; gap: .5rem; align-items: center; font-weight: 400; }
