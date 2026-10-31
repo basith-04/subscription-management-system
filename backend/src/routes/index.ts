@@ -3,6 +3,7 @@ import type { Config } from '../config.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
 import type { AuthService } from '../modules/auth/auth.service.js'
 import { createCustomersRouter, createMeRouter } from '../modules/customers/customers.routes.js'
+import { createInvoicesRouter } from '../modules/invoices/invoices.routes.js'
 import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
@@ -51,44 +52,15 @@ export function createApiRouter({
     '/auth',
     createAuthRouter({ service: authService, config, authenticate }),
   )
-  // F05 config
-  router.use('/plans', plansRouter)
+  router.use('/customers', createCustomersRouter(authenticate))
+  router.use('/me', createMeRouter(authenticate))
+  router.use('/plans', createPlansRouter(authenticate))
+  router.use('/invoices', createInvoicesRouter(authenticate, config))
   router.use('/products', productsRouter)
   router.use('/variants', variantsRouter)
   router.use('/users', usersRouter)
   router.use('/taxes', taxesRouter)
   router.use('/payment-terms', paymentTermsRouter)
-  // main's config
-  router.use('/customers', createCustomersRouter(authenticate))
-  router.use('/me', createMeRouter(authenticate))
-  router.use('/plans', createPlansRouter(authenticate))
-  router.use('/products', productsRouter)
-  router.use('/variants', variantsRouter)
-  router.use('/users', usersRouter)
 
- 
   return router
 }
-
-export const apiRouter = Router()
-
-apiRouter.get('/', (_req, res) => {
-  res.json({
-    data: {
-      name: 'Brightloop Subscription API',
-      version: VERSION,
-      docs: 'See docs/api/api-specification.md',
-    },
-  })
-})
-
-apiRouter.get('/health', (_req, res) => {
-  res.json({ data: healthPayload() })
-})
-
-apiRouter.use('/plans', plansRouter)
-apiRouter.use('/products', productsRouter)
-apiRouter.use('/variants', variantsRouter)
-apiRouter.use('/users', usersRouter)
-apiRouter.use('/taxes', taxesRouter)
-apiRouter.use('/payment-terms', paymentTermsRouter)
