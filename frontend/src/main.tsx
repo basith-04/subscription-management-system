@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthLayout } from './features/auth/AuthLayout'
 import { LoginPage } from './features/auth/LoginPage'
@@ -12,7 +12,7 @@ import { AccountShell } from './features/auth/AccountShell'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
-import { ProductDetailPage, ProductFormPage, ProductListPage } from './features/products'
+import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
 
 const queryClient = new QueryClient()
 
@@ -26,20 +26,24 @@ createRoot(document.getElementById('root')!).render(
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<RequireRole roles={['customer']} />}>
-          <Route path="/portal/profile" element={<ProfilePage />} />
-          <Route path="/portal/*" element={<AccountShell area="portal" />} />
+          <Route path="/portal" element={<AccountShell area="portal" />}>
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
         </Route>
         <Route element={<RequireRole roles={['admin', 'staff']} />}>
-          <Route path="/app" element={<AccountShell area="app" />} />
-          <Route path="/app/customers" element={<CustomerListPage />} />
-          <Route path="/app/customers/new" element={<CustomerFormPage />} />
-          <Route path="/app/customers/:id" element={<CustomerDetailPage />} />
-          <Route path="/app/customers/:id/edit" element={<CustomerFormPage />} />
-          <Route path="/app/invoices" element={<InvoiceListRoute />} />
-          <Route path="/app/invoices/:id" element={<InvoiceDetailRoute />} />
-          <Route path="/app/products" element={<ProductListRoute />} />
-          <Route path="/app/products/new" element={<ProductFormRoute />} />
-          <Route path="/app/products/:id" element={<ProductDetailRoute />} />
+          <Route path="/app" element={<AccountShell area="app" />}>
+            <Route path="customers" element={<CustomerListPage />} />
+            <Route path="customers/new" element={<CustomerFormPage />} />
+            <Route path="customers/:id" element={<CustomerDetailPage />} />
+            <Route path="customers/:id/edit" element={<CustomerFormPage />} />
+            <Route path="invoices" element={<InvoiceListRoute />} />
+            <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
+            <Route path="products" element={<ProductListRoute />} />
+            <Route element={<RequireRole roles={['admin']} />}>
+              <Route path="products/new" element={<ProductFormRoute />} />
+            </Route>
+            <Route path="products/:id" element={<ProductDetailRoute />} />
+          </Route>
         </Route>
         {/* Standalone print view: deliberately outside any app chrome. */}
         <Route element={<RequireRole roles={['admin', 'staff']} />}>
@@ -49,19 +53,3 @@ createRoot(document.getElementById('root')!).render(
     </Routes></BrowserRouter></QueryClientProvider>
   </StrictMode>,
 )
-
-function ProductListRoute() {
-  return <ProductListPage navigate={useNavigate()} />
-}
-
-function ProductFormRoute() {
-  return <ProductFormPage navigate={useNavigate()} />
-}
-
-function ProductDetailRoute() {
-  const navigate = useNavigate()
-  const id = Number(useParams().id)
-  return Number.isSafeInteger(id) && id > 0
-    ? <ProductDetailPage id={id} navigate={navigate} />
-    : <Navigate to="/app/products" replace />
-}
