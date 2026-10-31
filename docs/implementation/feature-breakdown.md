@@ -614,7 +614,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 **G. Edge cases**
 - Rate with more than 3 decimals; negative; > 100; string vs number input.
 - Editing a rate while billing runs (new rate applies to invoices created after commit; no retroactive change).
-- Deactivating a tax still referenced by active subscription lines (**D-24**/billing doc: existing lines keep using it, UI warns).
+- Deactivating a tax still referenced by active subscription lines (**D-24**: existing lines keep using it, UI warns).
 - Concurrent edits of the same rule.
 
 **H. Testing requirements**
@@ -648,7 +648,7 @@ Features in the same wave have no hard dependency on each other, so they can be 
 2. "New product": fill fields → save → redirected to the product page.
 3. On the product page, the **Variants** panel: add `Brand = Odoo`, adjustment `560.00`; the panel shows effective price `base + adjustment` (e.g. 1,000.00 + 560.00 = 1,560.00).
 4. Edit/deactivate product or variants; delete only if never used.
-5. Staff can view products and variants (cost price visible, read-only – see **D-23**/Security open question 2).
+5. Staff can view products and variants (cost price visible, read-only – see **D-26**).
 - *Failures:* duplicate product name; duplicate variant `(attribute, value)`; adjustment making the effective price negative → 422; delete of used product/variant → 409 `IN_USE`.
 
 **C. Database implementation**
@@ -775,4 +775,976 @@ Features in the same wave have no hard dependency on each other, so they can be 
 
 ---
 
-<!-- PART3 -->
+## 7. Phase 2 – Main business workflows
+
+### F08 – Quotation templates
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F05 (taxes, payment terms), F06 (products), F07 (plans) |
+| **Can be developed independently** | Yes (small) |
+| **Order** | W3, **first** – F09 needs its tables |
+| **Integration points** | F09 creates quotations from a template (copies lines, sets validity) |
+| **Shared files / conflicts** | Builds the shared **`LineItemsEditor`** component (product, variant, quantity, unit price, tax) that F09 reuses; agree on its props with the F09 owner before starting |
+| **Complexity** | Medium |
+
+**A. Overview.** Official: a sales rep starts from a reusable template with the right plan and product lines that stays valid for a set number of days. This feature lets Admin define templates. *Outcome:* preconfigured starting points that speed up quotation creation.
+
+**B. User flow**
+1. Admin opens **Catalogue → Quotation templates**, clicks "New template".
+2. Enters name, selects a plan, validity in days, default payment term, notes.
+3. Adds lines in the `LineItemsEditor`: product → optional variant → quantity → unit price (pre-filled with effective price, overridable) → tax rule.
+4. Saves; the template appears in the list. Staff can view templates and see them in the quotation wizard (F09).
+5. Edit/deactivate later (existing quotations are unaffected because lines were copied).
+- *Failures:* inactive plan/product at save → 422; no lines → 422; duplicate name → 409.
+
+**C. Database implementation**
+- Tables owned: `quotation_templates` (unique `name`, `validity_days > 0`, FK plan, FK payment term), `quotation_template_items` (FK template cascade, product, optional variant, quantity > 0, optional price override, optional tax rule, `sort_order`).
+- Items are replaced as a set inside one transaction when `items` is sent on PATCH.
+- Deletion semantics: **D-10** (default: deactivate; hard delete allowed only when no subscription references it).
+
+**D. Backend implementation**
+- Module `modules/quotation-templates/`: `list`, `create`, `get`, `update` (replace items), `deactivate/delete`.
+- Validation: plan active; each product active and variant belongs to product; quantity integer > 0; unit price override ≥ 0; tax rule active; `validity_days` positive integer.
+- Authorization: write Admin, read Admin + Staff.
+- Exposes `getTemplateForUse(id)` used by F09 (returns plan, term, validity, items with resolved effective prices).
+- Errors: 409 duplicate, 422, 404, 403.
+
+**E. Frontend implementation**
+- Pages: `TemplateListPage`, `TemplateFormPage`.
+- Components: **`LineItemsEditor`** (add/remove/reorder rows, per-row validation, computed line amount using money helper, optional totals footer), `TemplateSelect` (active templates; shows plan name).
+- Behaviour: selecting a product loads variants; effective price auto-fills until the user overrides it; tax select defaults empty (no tax).
+- States: empty ("No lines yet"), save errors per row, success toast.
+- Responsive: line rows collapse into stacked cards on narrow screens.
+
+**F. API contract** ([API Spec §7.1](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/quotation-templates` | A,S | `q,is_active` | 200 list | – |
+| POST | `/quotation-templates` | A | `{name,plan_id,validity_days,payment_term_id?,notes?,items[]}` | 201 | 409, 422 |
+| GET | `/quotation-templates/:id` | A,S | – | 200 with `items[]` | 404 |
+| PATCH | `/quotation-templates/:id` | A | subset; `items` replaces all | 200 | 404, 422 |
+| DELETE | `/quotation-templates/:id` | A | – | 204 | 409 (if **D-10** blocks) |
+
+**G. Edge cases**
+- Template line references a product/variant/tax that is later deactivated (F09 must reject or warn at use time; here: show a warning badge in the editor).
+- Two admins editing the same template.
+- Zero or negative quantities; huge quantities.
+- A plan whose `min_quantity` exceeds a line's quantity (warn in the editor; hard validation happens in F09).
+
+**H. Testing requirements**
+- *Unit:* item validation; effective-price defaulting.
+- *Integration:* create with items, replace items atomically (rollback on bad row), role matrix, `getTemplateForUse`.
+- *Frontend:* `LineItemsEditor` add/remove/validation/totals; template form submit payload.
+- *E2E/manual:* admin builds "Standard SaaS yearly" template with two lines.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] `LineItemsEditor` is documented, tested, and consumed by the F09 owner without modification (or with an agreed PR).
+- [ ] Editing a template does not alter any existing quotation (verified once F09 exists).
+
+---
+
+### F09 – Quotations and subscription creation (Draft → Quotation → Confirmed)
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F04 (customers), F05, F06, F07, F08 |
+| **Can be developed independently** | Yes, with factories for catalogue data |
+| **Order** | W3 (after F08 migration merges) – **on the critical path** |
+| **Integration points** | F10 extends the same state machine (activate/pause/renew/close); F11 and F12 reference subscriptions; F14 shows them to customers; F15 grants discounts to subscriptions |
+| **Shared files / conflicts** | **Subscription state-machine module** (this feature creates it, F10 adds transitions – merge F09's module first); the subscription detail page (F10, F12, F15 add panels – leave panel slots); `billing/pricing` module (owned here, reused by F12) |
+| **Complexity** | High |
+
+**A. Overview.** Official: sales reps build a quotation from a template; each subscription has a unique number, customer, plan, start and expiry date, payment terms, and lines (product, quantity, unit price, tax, amount); it moves Draft → Quotation → Confirmed → Active → Closed and the team can always see where it stands. This feature delivers creation, editing, lines and totals, numbering, the first three transitions (plus cancellation), and the staff list/detail screens. *Key design fact:* **a quotation is a subscription whose status is `draft` or `quotation`** — there is no separate table ([Database Design §3](../database/database-design.md)).
+
+**B. User flow** ([Data Flow 3](../architecture/data-flows.md#flow-3-quotation-to-subscription), [State Machines §2](../architecture/state-machines.md))
+1. Sales rep opens **Quotations → New**, picks a customer (`CustomerSelect`) and either a **template** or a plan.
+2. The form pre-fills plan, payment term, lines (copied from the template) and a suggested validity; rep sets start and expiry dates and adjusts quantities, prices, tax per line. A **totals panel** shows subtotal, tax, total.
+3. Save → subscription created as `draft` with a unique number (`SUB-000123`).
+4. "Issue quotation" → status `quotation`, `quotation_valid_until` set. (Optionally "email to customer" is a later enhancement.)
+5. The customer (portal, F14) or staff "Confirms" → `confirmed`. Activation happens in F10.
+6. "Cancel" is available while draft/quotation/confirmed → `closed` (reason `cancelled`).
+7. Staff open **Subscriptions** to list and filter all subscriptions by status, customer, plan, expiry; the detail page shows header, lines, status badge, and a **status history** timeline.
+- *Alternate:* create directly from a plan with no template; edit lines while in `draft`/`quotation`.
+- *Failures:* plan not available on the start date (`PLAN_NOT_AVAILABLE` 422); quantity below plan minimum (`QUANTITY_BELOW_MINIMUM` 422); confirming after validity (`QUOTATION_EXPIRED` 409); two people confirming at once (second gets `INVALID_STATE_TRANSITION` 409).
+
+**C. Database implementation**
+- Tables owned: `subscriptions` and `subscription_items` (exact columns, `CHECK`s and indexes in [DB design §4.5](../database/database-design.md)), sequence `subscription_number_seq`.
+- Writes on create (one transaction): `INSERT subscriptions` (number from the sequence, status `draft`), `INSERT subscription_items` with **snapshotted** `description` and `unit_price` (product price + variant adjustment, or the template/override), `audit_logs`.
+- Transitions: `UPDATE subscriptions SET status=… WHERE id=$1 AND status=$expected` (+ timestamps `confirmed_at`, `closed_at`, `closed_reason`), then audit — one transaction.
+- Reads: list with joins to customer and plan names only (never loading lines); detail loads lines; history reads `audit_logs`.
+- Indexes to verify: UQ `number`, `(customer_id, status)`, `(status, expiry_date)`, `(plan_id)`, partial `next_billing_date` index (used by F12).
+- Edits of lines in `draft`/`quotation` replace the item set in one transaction; `line_amount` is a generated column.
+
+**D. Backend implementation**
+- Module `modules/subscriptions/` (service shared by `/quotations` and `/subscriptions` routes) and `billing/pricing.js` (`resolveUnitPrice`, `computeLine`, `computeTotals` using `lib/money`; F12 reuses these).
+- Service functions: `createFromTemplate`, `createFromPlan`, `update`, `issueQuotation`, `confirm`, `cancel`, `list`, `get`, `getHistory`, plus validators: customer exists and active, plan active and `assertPlanAvailable` on `start_date` (F07), `quantity ≥ plan.min_quantity`, `expiry_date ≥ start_date`, tax rule active, `payment_term` default from the template/plan.
+- **State machine** (using the F00 helper): allowed transitions `draft→quotation`, `quotation→confirmed`, `draft|quotation|confirmed→closed`; everything else 409. Guards: `confirm` requires today ≤ `quotation_valid_until`; customers may confirm only their own quotation.
+- Authorization: create/edit/issue/cancel Admin + Staff; confirm Admin + Staff + owning Customer; lists Admin + Staff.
+- Computed API fields: `display_status`, `days_to_expiry`, `totals`, and `can_*` flags (some completed in F10).
+- Response for totals: subtotal, estimated tax, total (strings). These are **estimates before discounts**; invoices are authoritative.
+- Errors: 404, 409 (`INVALID_STATE_TRANSITION`, `QUOTATION_EXPIRED`), 422, 403.
+- Background: the **quote-expiry job** is registered by F10.
+
+**E. Frontend implementation**
+- Pages: `QuotationListPage`, `QuotationCreatePage` (stepper or single form), `QuotationDetailPage` with action bar (Issue / Confirm / Cancel), `SubscriptionListPage`, `SubscriptionDetailPage` (header, lines, status timeline; panel slots for F10 operations, F12 billing history, F15 discounts).
+- Components: `LineItemsEditor` (from F08), `TotalsPanel`, `SubscriptionStatusBadge` (incl. paused/expired variants), `StatusTimeline`, `CustomerSelect` (F04), `TemplateSelect` (F08), `PlanSelect` (F07).
+- Behaviour: choosing a template fills the form but everything stays editable; changing the plan re-validates min quantity and availability; action buttons are shown from `can_*`/status but errors from the server are still handled; confirm dialogs for Cancel.
+- Filters bound to URL: status, customer, plan, expiry range, text search (number/customer).
+- States: empty list message with "Create quotation"; skeleton on detail; 409/422 shown as banners with the server message.
+
+**F. API contract** ([API Spec §7.2 and §8](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/quotations` | A,S | `status,customer_id,q,valid_until_to` | 200 list | – |
+| POST | `/quotations` | A,S | `{customer_id,template_id?\|plan_id,start_date,expiry_date,payment_term_id?,items?}` | 201 with `totals` | 422 `PLAN_NOT_AVAILABLE`, `QUANTITY_BELOW_MINIMUM` |
+| GET | `/quotations/:id` | A,S | – | 200 | 404 |
+| PATCH | `/quotations/:id` | A,S | subset; `items` replaces lines | 200 | 409 |
+| POST | `/quotations/:id/issue` | A,S | `{valid_until?}` | 200 | 409, 422 |
+| POST | `/quotations/:id/confirm` | A,S,C(own) | – | 200 | 409 `QUOTATION_EXPIRED`, 404 |
+| POST | `/quotations/:id/cancel` | A,S | `{reason?}` | 200 | 409 |
+| GET | `/subscriptions` | A,S | `status,customer_id,plan_id,paused,billing_frequency,expiry_*,q,sort,page` | 200 list | – |
+| GET | `/subscriptions/:id` | A,S | – | 200 | 404 |
+| POST | `/subscriptions` | A,S | same as quotation create | 201 | 422 |
+| PATCH | `/subscriptions/:id` | A,S | subset | 200 | 409 |
+| GET | `/subscriptions/:id/history` | A,S | – | 200 list | 404 |
+
+(Operations `activate/pause/resume/renew/close` are in F10; invoices of a subscription in F12; discounts in F15; `/me/*` in F14.)
+
+**G. Edge cases**
+- Backdated `start_date` (allowed for Admin only? **D-18**; default: rejected for Staff).
+- Plan becomes unavailable or inactive between draft and confirm (re-validate at confirm).
+- Product price changes after the quotation was saved (price stays as snapshotted; show a hint if it differs from the catalogue).
+- Template deactivated/edited after use (no effect).
+- Tax rule deactivated between save and confirm.
+- Duplicate submit of "Create" (idempotent UI; sequence gaps acceptable).
+- Concurrent edit by two reps (last write wins unless the team adds version checks – note, not required).
+- Customer attempts to confirm someone else's quotation (404); confirms a `draft` (409).
+- Editing a `confirmed` subscription's lines (draft/quotation lines are editable; for `active` subscriptions see **D-28**).
+- Large number of lines; zero lines when issuing (422).
+
+**H. Testing requirements**
+- *Unit:* `resolveUnitPrice`, `computeLine/Totals` with rounding (33.33 × 5 % → 1.67), state-transition table (every allowed and forbidden pair), date validations.
+- *API integration:* create from template copies lines and snapshots prices; later catalogue price change does not change the subscription line; each transition success + forbidden; concurrent confirm; role matrix; customer ownership on confirm; list filters/sort/pagination; `PLAN_NOT_AVAILABLE`/`QUANTITY_BELOW_MINIMUM`.
+- *Frontend:* wizard validation; template pre-fill; action buttons per status; filter-to-URL binding; error banners.
+- *E2E/manual:* template → quotation → issue → confirm → appears in subscription list with history.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] A rep can complete Draft → Quotation → Confirmed in the UI; each step writes an audit row visible in the history timeline.
+- [ ] Unique, sequential-style numbers; no two subscriptions share a number even under parallel creation.
+- [ ] Price snapshot behaviour demonstrated by a test (catalogue price change after creation).
+- [ ] The state machine module has the full transition table covered by tests and is documented for F10.
+
+---
+
+### F10 – Subscription operations and scheduled lifecycle (activate, pause, resume, renew, close, expiry)
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F09 |
+| **Can be developed independently** | Yes (uses factories to create `confirmed`/`active` subscriptions) |
+| **Order** | W4 |
+| **Integration points** | F12 consumes the billing cursor fields set here (`billing_anchor_date`, `period_index`, `next_billing_date`); F14 exposes the customer-initiated actions; F18 may send renewal reminders |
+| **Shared files / conflicts** | State-machine module and subscription service (extends F09 – coordinate); subscription detail page action bar |
+| **Complexity** | High |
+
+**A. Overview.** Implements the rest of the lifecycle: Confirmed → Active → Closed, plus the plan-controlled **pause, renewal, early closure, and automatic closure**. *Why:* the plan policies set in F07 only matter once actions enforce them. *Rules:* **pause is a flag on an Active subscription, not a new state**; renewal extends `expiry_date`; early closure is a transition to Closed ([State Machines §2.3](../architecture/state-machines.md)).
+
+**B. User flow** ([Data Flow 7](../architecture/data-flows.md#flow-7-subscription-renewal))
+1. A `confirmed` subscription becomes `active` when its start date arrives (daily job) or when staff click "Activate" (earlier than the start date: Admin only). Billing fields are initialized.
+2. On an active subscription staff see only the actions that the plan allows (`can_pause`, `can_renew`, `can_close`): **Pause** (reason), **Resume**, **Renew**, **Close early** (reason).
+3. Each action opens a confirm dialog; on success the detail page refreshes and the history timeline shows the new entry.
+4. Each night the expiry job renews (if `auto_renew` and allowed), auto-closes (`closed_reason=expired`, if the plan has `auto_close_on_end`) or flags "Expired – action needed".
+5. Stale quotations (past `quotation_valid_until`) are closed by the quote-expiry job.
+- *Admin override:* closing early when the plan disallows it requires `override: true` and is audited.
+- *Failures:* `PLAN_POLICY_FORBIDS` 403; invalid state 409; pausing an already paused subscription 409.
+
+**C. Database implementation**
+- Table: `subscriptions` (columns `status`, `paused_at`, `pause_reason`, `closed_at`, `closed_reason`, `expiry_date`, `billing_anchor_date`, `period_index`, `next_billing_date`, `auto_renew`, `activated_at`). No new tables.
+- Writes (each in one transaction with a conditional status check and an audit row):
+  - *Activate:* `status='active'`, `activated_at`, `billing_anchor_date=start_date`, `period_index=0`, `next_billing_date=start_date`.
+  - *Pause:* `paused_at=now()`, `pause_reason`.
+  - *Resume:* `paused_at=NULL`; `billing_anchor_date=resume date`, `period_index=0`, `next_billing_date=resume date`; `expiry_date += days paused` (assumptions from the state-machine doc; **D-21**).
+  - *Renew:* `expiry_date += one term`; if `next_billing_date IS NULL` recompute it from `period_index` when the new expiry covers it.
+  - *Close:* `status='closed'`, `closed_at`, `closed_reason`, `next_billing_date=NULL`.
+- DB `CHECK`s already enforce: paused only if active; `next_billing_date` only if active; closed ⇒ `closed_at`.
+- Reads for jobs use the indexes `(status, expiry_date)` and the partial billing index.
+
+**D. Backend implementation**
+- Extends `modules/subscriptions/` with `activate`, `pause`, `resume`, `renew`, `close` service functions. Policy checks read the plan **at action time**; Customers may act only on their own subscription and only where the policy allows.
+- Jobs (registered with the F00 scheduler; plain exported functions, idempotent, safe to run twice):
+  1. `activateDueSubscriptions(asOf)` – confirmed with `start_date ≤ today`.
+  2. `closeExpiredQuotations(asOf)`.
+  3. `processExpiry(asOf)` – renew / auto-close / flag as described in [State Machines §2.4](../architecture/state-machines.md). Runs after billing in the daily order *activation → billing → expiry*.
+  4. Startup catch-up: all three run once at server start.
+- API computed flags `can_pause`, `can_renew`, `can_close`, `display_status`, `days_to_expiry` implemented here and tested.
+- Errors: 403 `PLAN_POLICY_FORBIDS`, 409 `INVALID_STATE_TRANSITION`, 404, 422.
+
+**E. Frontend implementation**
+- On `SubscriptionDetailPage`: **`SubscriptionActions`** panel (buttons derived from `can_*` and status), dialogs with reason fields (`PauseDialog`, `CloseDialog`, `RenewDialog`), "Admin override" checkbox visible to Admin only, paused/expired badges, countdown (`days_to_expiry`), "Expired – action needed" banner.
+- List page additions: filter `paused`, "expiring soon" quick filter, expiry column colouring.
+- Behaviour: actions disable while pending; after success invalidate detail + list queries; policy errors displayed as plain text ("This plan does not allow pausing").
+- States: confirmation dialogs, toasts, error banners.
+
+**F. API contract** ([API Spec §8](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| POST | `/subscriptions/:id/activate` | A,S | `{force?}` (A only) | 200 | 409, 422 |
+| POST | `/subscriptions/:id/pause` | A,S,C(own) | `{reason?}` | 200 | 403 `PLAN_POLICY_FORBIDS`, 409 |
+| POST | `/subscriptions/:id/resume` | A,S,C(own) | – | 200 | 409 |
+| POST | `/subscriptions/:id/renew` | A,S,C(own) | `{terms?:1}` | 200 | 403, 409 |
+| POST | `/subscriptions/:id/close` | A,S,C(own) | `{reason?,effective_date?,override?}` | 200 | 403, 409 |
+
+(`effective_date` semantics are **D-16**; default: ignored / immediate.)
+
+**G. Edge cases**
+- Pause on the day billing is due; resume then immediately due.
+- Renew when billing already stopped at the old expiry (cursor recompute).
+- Plan policy changed between page load and click.
+- Customer clicks twice or from two tabs (conditional update → second gets 409).
+- Closing a subscription with outstanding/draft invoices (allowed; invoices remain – **D-29**).
+- Job runs twice, job crashes mid-way (each subscription handled in its own transaction).
+- Expiry job and billing job racing on the same subscription (both lock the row).
+- Timezone boundary at midnight (**D-22**).
+
+**H. Testing requirements**
+- *Unit:* policy matrix (each plan flag × action × role), renewal date math, resume extension math, `can_*` calculation.
+- *Integration:* every operation success + forbidden state/policy; Admin override audited; jobs with an injected clock (activation on start date, quote expiry, auto-close, auto-renew, flag-only); idempotent job re-run; role/ownership matrix.
+- *Frontend:* action buttons shown/hidden per `can_*`; dialogs submit correct payload; error messages for 403/409.
+- *E2E/manual:* confirmed → activate → pause → resume → renew → close early.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] The complete lifecycle through `closed` works in the UI, including plan-policy refusals.
+- [ ] Jobs are registered, run at startup, can be triggered in tests with a fake clock, and are idempotent.
+- [ ] After activation, the billing fields satisfy what F12 expects (documented, with a factory `createActiveSubscription`).
+
+---
+
+### F11 – Invoice management (view, confirm, cancel, send, print)
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F04, F09 |
+| **Can be developed independently** | Yes – invoices are created by test factories until F12 lands |
+| **Order** | W4 |
+| **Integration points** | F12 creates invoices (drafts); F13 changes `amount_paid`/status and adds the payments panel; F14 shows invoices to customers; F15 hooks discount release on cancel; F16 aggregates invoices |
+| **Shared files / conflicts** | Invoice detail page (F13 and F15 add panels – leave slots); `payment_state` helper (owned here, used everywhere) |
+| **Complexity** | Medium |
+
+**A. Overview.** Official: staff can confirm, cancel, send, and print any invoice; lifecycle Draft → Confirmed → Paid. This feature owns invoice **storage, listing, detail, state transitions, email sending, and print view**. Invoices are *created* by the billing engine (F12). *Outcome:* a complete invoice screen that is correct for drafts, confirmed, paid, and cancelled invoices, and a trustworthy `payment_state`.
+
+**B. User flow** ([State Machines §3](../architecture/state-machines.md))
+1. Staff open **Invoices**: tabs/filters for All, Draft, Outstanding, Overdue, Paid, Cancelled; search by number/customer; date filters; summary totals for the current filter.
+2. Open an invoice: header (customer snapshot, period, dates, terms), lines, tax summary, totals, `amount_paid`/`amount_due`, status and `payment_state` badges.
+3. **Confirm** a draft (or bulk-confirm several drafts, e.g. from a billing run) → status `confirmed`, lines become read-only.
+4. **Send**: dialog with recipient (defaults to the customer email) and message → email with the invoice (HTML; PDF is out of scope unless decided) → `sent_at` set.
+5. **Print**: opens a print-optimized page (print stylesheet) of the invoice.
+6. **Cancel**: reason required; allowed for draft, and for confirmed invoices with no payments; paid invoices cannot be cancelled.
+7. Drafts can be adjusted (due date, notes, removing a line) before confirming.
+- *Failures:* wrong state → 409; email failure → 502 `EMAIL_FAILED` with the invoice unchanged; cancelling an invoice with payments → 409 with the hint "void the payment first".
+
+**C. Database implementation**
+- Tables owned: `invoices`, `invoice_items`, `invoice_tax_details`, `billing_runs` (+ sequence `invoice_number_seq`), per [DB design §4.7/§4.9](../database/database-design.md), including the **partial unique index** `(subscription_id, period_start) WHERE status <> 'cancelled'`, the total/paid `CHECK`s, generated `amount_due`, and the list/overdue indexes.
+- Writes: status transitions with conditional updates; `sent_at`; cancel stores `cancel_reason`, `cancelled_at`; `audit_logs` in the same transaction.
+- Reads: list joins only customer name; detail loads items and tax details; list `meta.summary` via one aggregate query on the same filter.
+- `payment_state` derivation (not stored): draft / not_due / outstanding / partially_paid / overdue / paid / cancelled — implemented once as SQL expression + JS helper (**D-13** for grace days, default 0).
+- Consistency: invoice rows are immutable once confirmed except payment-related fields owned by F13.
+
+**D. Backend implementation**
+- Module `modules/invoices/`: `list`, `get`, `updateDraft`, `confirm`, `bulkConfirm`, `cancel`, `send`, `renderPrint`.
+- `invoiceStateMachine` built on the F00 helper: `draft→confirmed`, `draft→cancelled`, `confirmed→cancelled` (no payments), `confirmed→paid` (**only** callable from the payment service, F13), `paid→confirmed` (void, F13).
+- `send` uses `lib/mailer`; recipient validated; email failure never rolls back existing data and returns 502; `sent_at` set only on success.
+- Print: server returns HTML (same template used for email body); every field HTML-escaped.
+- Authorization: Admin + Staff; Staff may not cancel an invoice that has any payment (Admin must void first, then cancel).
+- Errors: 404, 409 (`INVALID_STATE_TRANSITION`), 502, 422, 403.
+- Cancel calls a hook `releaseDiscountRedemption(tx, invoiceId)` which is a no-op until F15 implements it.
+
+**E. Frontend implementation**
+- Pages: `InvoiceListPage` (filters in URL, summary strip), `InvoiceDetailPage` (action bar, lines table, tax summary, slots for "Payments" and "Discount"), `InvoicePrintPage` (print CSS, no app chrome), `SendInvoiceDialog`, `CancelInvoiceDialog`, bulk-select with "Confirm selected".
+- Components: `PaymentStateBadge`, `Money`, `InvoiceTotals`, `InvoiceDocument` (the printable layout reused by the portal in F14).
+- Behaviour: actions appear per status; confirm/cancel require dialogs; send shows a progress state and a success toast with the recipient; print opens in a new tab and triggers `window.print()`.
+- States: empty list per filter; error banner on 409; skeleton on detail.
+- Responsive: list collapses to cards; the printable view is fixed-width A4-like.
+
+**F. API contract** ([API Spec §11](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/invoices` | A,S | `status,payment_state,customer_id,subscription_id,issue_*,due_*,q,min_total,max_total,sort,page` | 200 list + `meta.summary` | – |
+| GET | `/invoices/:id` | A,S | – | 200 | 404 |
+| PATCH | `/invoices/:id` | A,S | draft-only subset | 200 | 409 |
+| POST | `/invoices/:id/confirm` | A,S | – | 200 | 409 |
+| POST | `/invoices/bulk-confirm` | A,S | `{invoice_ids?\|billing_run_id?}` | 200 `{confirmed, failed[]}` | 422 (> 500 ids) |
+| POST | `/invoices/:id/cancel` | A,S | `{reason}` | 200 | 409, 422 |
+| POST | `/invoices/:id/send` | A,S | `{to?,message?}` | 200 with `sent_at` | 409, 422, 502 |
+| GET | `/invoices/:id/print` | A,S | `format=html` | HTML | 404 |
+
+(`POST /invoices` manual creation and billing endpoints: F12. `GET /invoices/:id/payments`: F13. `/me/invoices*`: F14.)
+
+**G. Edge cases**
+- Confirm twice / confirm while another user cancels (conditional update).
+- Cancel a partially paid invoice (must fail).
+- Sending a draft or cancelled invoice (409); invalid recipient address; mail server down.
+- Bulk confirm with mixed states (partial success is reported per invoice).
+- Totals that do not add up in test data (the DB `CHECK` rejects them).
+- Printing very long descriptions/many lines (page breaks).
+- Overdue calculation at midnight/time zone (**D-22**).
+- Viewing an invoice for a customer whose profile later changed (snapshot must be shown).
+
+**H. Testing requirements**
+- *Unit:* `payment_state` derivation table (every status × paid/due/date combination), state machine pairs.
+- *Integration:* all transitions; cancel rules; send success/failure with a mail stub; bulk-confirm partial results; list filters and `meta.summary` equal to direct SQL; DB constraint tests (duplicate period, bad totals, paid ⇒ `amount_due=0`).
+- *Frontend:* actions per status; send dialog validation; filters bound to URL; printable view renders snapshot data.
+- *E2E/manual:* factory-created draft → confirm → send (Mailpit) → print → cancel another.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] Confirm / cancel / send / print all work from the UI for the right statuses and roles.
+- [ ] `payment_state` is computed in exactly one place and covered by tests, including *overdue is never treated as paid or cancelled*.
+- [ ] The partial unique index for duplicate periods is verified by an automated test.
+- [ ] Sent email visible in Mailpit with correct totals.
+
+---
+
+### F12 – Recurring billing engine and billing runs
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F09, F11 (F10 recommended: activation sets the cursor) |
+| **Can be developed independently** | Yes – uses factories for active subscriptions; the pure calculators can start earlier |
+| **Order** | W5 – **start immediately when F11's migration merges; critical path and highest risk** |
+| **Integration points** | Creates drafts consumed by F11/F13/F14; F15 plugs discounts into the invoice builder; F10 provides pause/resume/expiry behaviour; scheduler from F00 |
+| **Shared files / conflicts** | `billing/` folder (F09 owns `pricing`; this feature owns `periods`, run orchestration, invoice builder); subscription detail page "Billing" panel; F15 later edits the invoice builder (agree on an extension point: `applyDiscount(ctx)` hook) |
+| **Complexity** | High (assign a strong owner; **pair-review every PR**) |
+
+**A. Overview.** Official: invoices are generated automatically when billing is due, pre-filled with customer, lines, taxes and totals; **nothing is billed twice or skipped**. This feature implements the whole [Billing Engine](../architecture/billing-engine.md): period calculation, due-subscription scan with locking, invoice builder with snapshots and tax, cursor advance, catch-up, run bookkeeping, the manual creation endpoint, and the admin Billing screen. *Outcome:* the scheduler, or an Admin click, produces correct draft invoices exactly once per period.
+
+**B. User flow** ([Data Flow 4](../architecture/data-flows.md#flow-4-recurring-billing))
+1. Daily (and at startup) the scheduler calls `runBilling(asOf=today)`.
+2. For each due subscription (`active`, not paused, `next_billing_date ≤ asOf`) one transaction: compute period → snapshot lines/customer/terms/tax → build draft invoice → advance the cursor.
+3. Admin opens **Billing**: sees "Upcoming (next N days)", the **Run now** button, and run history (counts: scanned, created, skipped, errors).
+4. Admin opens a run: sees errors per subscription (`last_billing_error`) and a link to the invoices created, with **Confirm all drafts of this run**.
+5. On a subscription's detail page, the **Billing** panel lists its invoices by period and shows the next billing date and any last error.
+6. Staff can create a missing/re-issued invoice for a given period manually (`POST /invoices`), e.g. after cancelling one.
+- *Failures:* one bad subscription does not stop the run; the run ends `completed_with_errors`; a second click on Run now while one is running returns 409.
+
+**C. Database implementation**
+- Tables used (all created earlier): `subscriptions` (cursor fields), `subscription_items`, `customers`, `payment_terms`, `tax_rules`, `invoices`, `invoice_items`, `invoice_tax_details`, `billing_runs`, `audit_logs`. **No new tables.** (If a column is missing, change the DB design doc in the same PR.)
+- Per-subscription transaction: `SELECT … FOR UPDATE SKIP LOCKED` on the next due subscription (served by the partial index), inserts of invoice + items + tax details, `UPDATE subscriptions` (`period_index+1`, `next_billing_date` or `NULL` after expiry, `last_billing_error=NULL`), audit row.
+- Duplicate guard: partial unique index `(subscription_id, period_start) WHERE status <> 'cancelled'`; a unique violation = "already billed" (skip, not error).
+- Failure bookkeeping in a **separate small transaction**: `last_billing_attempt_at`, `last_billing_error`.
+- `billing_runs`: insert at start, update counters/status at the end (informational only).
+
+**D. Backend implementation**
+- Files: `billing/periods.js` (`periodStart(anchor, n, freq)`, `periodEnd`, month-end clamping), `billing/invoiceBuilder.js` (snapshots, per-line tax with `ROUND_HALF_UP`, `invoice_tax_details` from rounded line taxes), `billing/runBilling.js` (orchestration, catch-up loop, `MAX_CATCHUP_PERIODS` guard), `modules/billing/` (routes), job registration (`node-cron` daily + `runOnStartup`).
+- Rules implemented exactly as in the billing doc: periods always computed **from the anchor** (31 Jan → 28 Feb → 31 Mar), billing in advance, period only if `period_start ≤ expiry_date`, no proration, paused subscriptions skipped, invoice `issue_date = asOf`, `due_date = issue_date + term.due_days`, invoice number from the sequence, status `draft`, `billing_run_id` set.
+- Extension point for F15: `applyDiscount(ctx)` called between line subtotal and tax (returns no-op until F15).
+- Manual creation `POST /invoices {subscription_id, period_start}`: uses the same builder for a valid period boundary; refuses an already invoiced period (`PERIOD_ALREADY_INVOICED`).
+- Authorization: run now = Admin; list/detail runs, upcoming, manual create = Admin + Staff (matrix: Staff may view runs; **D-27**: Staff cannot run billing).
+- Emails: none sent by a run (**D-12**). Auto-confirm option `BILLING_AUTO_CONFIRM` default off.
+- Clock is injectable (`asOf` parameter) so tests control time.
+- Errors: 409 (`PERIOD_ALREADY_INVOICED`, run already running), 422 (`as_of` in the future), 404, 403.
+
+**E. Frontend implementation**
+- Pages: `BillingPage` (tabs: *Upcoming*, *Runs*), `BillingRunDetailPage`, subscription detail **Billing panel**, a "Create invoice for period" dialog (period dropdown computed by the backend or entered as `period_start`).
+- Components: `RunBillingButton` (Admin only, confirm dialog, shows running state and polls `/billing/runs/:id` until finished), `RunSummaryCard`, `UpcomingTable`, `ErrorList` (per-subscription errors with link).
+- Behaviour: polling stops on completion; "Confirm all drafts of this run" calls `bulk-confirm` with `billing_run_id`; success toast with counts.
+- States: empty ("Nothing due"), running spinner, failed run banner, `completed_with_errors` highlighted.
+
+**F. API contract** ([API Spec §11.1](../api/api-specification.md), manual create in §11)
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| POST | `/billing/runs` | A | `{as_of?}` (≤ today) | 202 `{run_id,status}` | 409 already running, 422 |
+| GET | `/billing/runs` | A,S | paging | 200 list | – |
+| GET | `/billing/runs/:id` | A,S | – | 200 run + `errors[]` | 404 |
+| GET | `/billing/upcoming` | A,S | `days` (1–90) | 200 list | 422 |
+| POST | `/invoices` | A,S | `{subscription_id, period_start}` | 201 draft invoice | 409 `PERIOD_ALREADY_INVOICED`, 422 |
+| GET | `/subscriptions/:id/invoices` | A,S | paging, `status` | 200 list | 404 |
+
+**G. Edge cases** (from [Billing Engine §9](../architecture/billing-engine.md))
+- Run twice the same day; two runs in parallel; two app instances.
+- Crash after the invoice insert but before commit (nothing persisted, cursor not advanced).
+- Server down for several periods (catch-up creates one invoice per missed period, none skipped, capped by `MAX_CATCHUP_PERIODS`).
+- Month-end anchors (31 Jan; 29 Feb in leap years), yearly on 29 Feb.
+- Subscription expiring mid-run; last period billed in full; nothing after expiry.
+- Customer/product/tax changed after activation (snapshot used; tax rate looked up at invoicing).
+- Inactive tax rule still on a line; missing tax rule.
+- Zero-amount or negative-total lines (rejected before insert).
+- One subscription failing repeatedly (error shown; not retried endlessly within a run).
+- Cancelled invoice period: scheduler does **not** recreate it; manual re-issue is allowed.
+- Very many due subscriptions (loop of short transactions; no long locks).
+
+**H. Testing requirements** (the 12 scenarios of [Billing Engine §11](../architecture/billing-engine.md) are mandatory)
+- *Unit (no DB):* period calculator (all four frequencies, clamping, leap years), totals/tax/rounding including the documented example (5 × 1,560.00, 10 %, GST 18 % ⇒ 8,283.60 once F15 exists; before that, tax-only variant), catch-up loop with a fake repository.
+- *Integration (real Postgres):* idempotency (run twice), concurrency (parallel runs), crash/rollback, downtime catch-up, paused/expired handling, unique-index violation treated as skip, failure isolation, `billing_runs` counters, manual create + `PERIOD_ALREADY_INVOICED`, reconciliation (`invoice.total = Σ lines`).
+- *Frontend:* run button flow with polling (mock timers), upcoming table, error list rendering, billing panel on subscription detail.
+- *End-to-end:* seeded active subscriptions → Run now → drafts appear → bulk confirm → open one invoice.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] All scenarios in Billing Engine §11 (except discount ones, finished in F15) pass in CI.
+- [ ] Running billing twice produces identical invoice sets; parallel runs prove no duplicates.
+- [ ] An Admin can run billing from the UI and understand the result (counts, errors, links).
+- [ ] The first invoice of a newly activated subscription is produced by a run (single creation path).
+- [ ] Documentation updated for any deviation from the billing doc.
+
+---
+
+### F13 – Payments (record, allocate, void) and outstanding / overdue tracking
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F11 (invoices), F04 (customers) |
+| **Can be developed independently** | Yes (uses confirmed-invoice factories) |
+| **Order** | W5 |
+| **Integration points** | Updates invoice `amount_paid`/status (F11 tables); powers outstanding/overdue lists and totals used by F16; payment history shown in the portal (F14); customer detail outstanding amounts (F04 page) |
+| **Shared files / conflicts** | Invoice detail page ("Payments" panel + "Record payment" button – coordinate with F11/F15 owners); customer detail page (adds an Outstanding section) |
+| **Complexity** | High |
+
+**A. Overview.** Official: payments arrive by different methods on different days and are recorded with method, amount, date and a note against the right invoice; the team must see paid, outstanding and overdue invoices. *Manual recording is the baseline; a payment gateway is optional and out of scope* ([System Architecture §12](../architecture/system-architecture.md)). *Outcome:* money received is traceable to invoices, balances are always correct, and mistakes can be corrected without deleting history.
+
+**B. User flow** ([Data Flow 5](../architecture/data-flows.md#flow-5-payment-processing))
+1. Staff open a **confirmed** invoice and click **Record payment**.
+2. Dialog: method, amount (default = `amount_due`), payment date (default today, not in the future), reference number, note. Optional: allocate one payment over several invoices of the same customer.
+3. Submit → payment and allocation(s) stored; invoice shows updated `amount_paid`/`amount_due`; a partial payment leaves it outstanding (or overdue); full payment makes it **Paid**.
+4. **Payments** page lists all payments with filters (method, customer, date range, voided).
+5. **Outstanding / overdue**: the invoice list filters (from F11) show outstanding and overdue; the customer detail page shows outstanding totals.
+6. Admin can **void** a mistaken payment (reason required) → balances recomputed; a `paid` invoice returns to `confirmed`.
+- *Failures:* over-payment 422; invoice not confirmed 409; duplicate reference 409; wrong customer mix 422.
+
+**C. Database implementation**
+- Tables owned: `payments` (method `CHECK`, `amount > 0`, `payment_date`, `reference_number`, `source`, `voided_at/void_reason`, `recorded_by`, partial unique index `(method, reference_number)` for non-void rows with a reference) and `payment_allocations` (unique `(payment_id, invoice_id)`, `amount > 0`), per [DB design §4.8](../database/database-design.md).
+- Transaction for "record payment": lock the invoice rows `FOR UPDATE` → validate invariants → insert `payments` + `payment_allocations` → `UPDATE invoices SET amount_paid = amount_paid + x` and, when `amount_due = 0`, `status='paid', paid_at=now()` → audit. All-or-nothing.
+- Void transaction: mark the payment, remove or neutralize its allocations, recompute `amount_paid` from the remaining allocations, set `paid→confirmed` if needed, audit.
+- Reconciliation query for tests/health: `invoices.amount_paid = Σ active allocations`.
+- Indexes: `(invoice_id)` on allocations, `(customer_id, payment_date DESC)` and `(payment_date)` on payments.
+
+**D. Backend implementation**
+- Module `modules/payments/`: `record`, `get`, `list`, `void`, `listForInvoice`; invariants: invoice `confirmed`, `Σ allocations ≤ payment.amount`, each allocation `≤ invoice.amount_due`, all invoices belong to the **same customer**, date not in the future, amount with ≤ 2 decimals (via `moneySchema` + `lib/money`).
+- Uses the F11 state machine's `confirmed→paid` and `paid→confirmed` entry points (the only legal callers).
+- Duplicate protection (v1): unique reference index, invoice row lock, optional 60-second heuristic on identical `(customer, invoice, amount, date, method)` returning 409 unless `confirm_duplicate: true` (**D-15** for Idempotency-Key).
+- Authorization: record = Admin + Staff; void = Admin; customers have no payment endpoints.
+- Errors: 409 (`DUPLICATE_PAYMENT_REFERENCE`, `INVALID_STATE_TRANSITION`), 422 (`ALLOCATION_EXCEEDS_AMOUNT_DUE`), 404, 403.
+- Adds `outstanding_amount`/`overdue_amount` to the customer detail query (F04 contract).
+
+**E. Frontend implementation**
+- Pages: `PaymentListPage`, "Payments" panel + `RecordPaymentDialog` on invoice detail, `VoidPaymentDialog`, customer detail "Outstanding" section.
+- Components: `MethodSelect`, `AllocationEditor` (multi-invoice allocation with remaining-balance hints and live validation), `PaymentStateBadge` (from F11).
+- Behaviour: amount defaults and caps to `amount_due`; submit disabled while pending (duplicate-click protection); after success invalidate invoice, invoice list, payments, dashboard queries; show new `payment_state`.
+- States: empty payment list, 409/422 messages next to the relevant field, success toast naming the invoice number.
+
+**F. API contract** ([API Spec §12](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/payments` | A,S | `method,customer_id,invoice_id,date_*,voided,q,sort,page` | 200 list with allocations | – |
+| POST | `/payments` | A,S | `{method,amount,payment_date,note?,reference_number?,allocations:[{invoice_id,amount}]}` | 201 payment + updated invoices | 409, 422 |
+| GET | `/payments/:id` | A,S | – | 200 | 404 |
+| POST | `/payments/:id/void` | A | `{reason}` | 200 | 409, 403 |
+| GET | `/invoices/:id/payments` | A,S | – | 200 list | 404 |
+
+**G. Edge cases**
+- Partial payments over several days; final payment exactly equal to `amount_due`.
+- Over-payment; payment on draft/cancelled/paid invoice.
+- Two staff paying the last amount at once (second fails cleanly).
+- Same bank/cheque reference entered twice; double-click on submit.
+- Allocation across invoices of different customers.
+- Voiding a payment that completed an invoice; voiding twice; voiding after the invoice's customer changed (snapshots unaffected).
+- Future-dated payment; timezone near midnight.
+- Rounding of decimals in allocations (`"0.1" + "0.2"` must equal `"0.30"`).
+
+**H. Testing requirements**
+- *Unit:* allocation validation, balance math with decimals, state decisions after a payment/void.
+- *Integration:* partial → full → `paid`; over-payment rejected; duplicate reference; concurrency on the last amount (parallel requests → exactly one success); multi-invoice allocation atomicity (rollback if one allocation fails); void restores state; reconciliation query holds; role matrix.
+- *Frontend:* record dialog defaults/validation, allocation editor totals, duplicate-click guard, panel refresh after success.
+- *E2E/manual:* confirmed invoice → partial payment → still outstanding → final payment → Paid → void → back to outstanding.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] Paid, outstanding, partially paid and overdue invoices are all visible and filterable in the UI with correct counts.
+- [ ] `amount_paid` always equals the sum of non-void allocations (reconciliation test).
+- [ ] No endpoint deletes or edits a payment amount; corrections only via void.
+- [ ] Overdue invoices are never shown as paid or cancelled.
+
+---
+
+### F14 – Customer portal (my subscriptions, my invoices, actions)
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F01, F04 (profile), F09, F10, F11; F13 recommended (payment history) |
+| **Can be developed independently** | Yes after F11, using factories |
+| **Order** | W5 |
+| **Integration points** | Calls the action endpoints of F09/F10 (confirm, pause, resume, renew, close); renders invoices with F11's `InvoiceDocument`; profile from F04 |
+| **Shared files / conflicts** | `PortalLayout` (F00), reuse of F11 print component; no changes to back-office pages |
+| **Complexity** | Medium |
+
+**A. Overview.** Official: customers see and manage **only their own** subscriptions and invoices through a self-service portal, without emailing anyone. *Outcome:* a customer can follow subscription status, confirm quotations, use plan-permitted actions, and view/print invoices and payment status. This feature is the main test of **customer data isolation**.
+
+**B. User flow** ([Data Flow 8](../architecture/data-flows.md#flow-8-customer-portal))
+1. Customer logs in → lands on **Portal home**: active subscriptions, next billing dates, outstanding/overdue summary, recent invoices.
+2. **My subscriptions**: list (number, plan, status, next billing, expiry); open one → lines, status, plan info, and only the actions their plan permits (Confirm quotation, Pause/Resume, Renew, Close).
+3. **My invoices**: list with `payment_state` badges and filters; open one → full invoice and its payments (**D-17**), with Print.
+4. **Profile** (F04) and Change password (F02) are linked from the portal menu.
+- *Failures:* another customer's id in the URL → "Not found" page (404); session expired → login; action refused by plan → message; no subscriptions/invoices → friendly empty state.
+
+**C. Database implementation**
+- No new tables. Read-only queries on `subscriptions`, `subscription_items`, `plans`, `invoices`, `invoice_items`, `invoice_tax_details`, `payment_allocations`/`payments`, always filtered by the session `customer_id`.
+- Invoice visibility: `status <> 'draft'` (**D-17** default). Quotation visibility: `quotation` and later statuses; `draft` hidden (default).
+- Indexes already available: `(customer_id, status)` on subscriptions and invoices.
+
+**D. Backend implementation**
+- Module `modules/portal/` (routes under `/me/*`) using the F00 `scopeToCustomer` helper for **every** query; detail lookups are `WHERE id=$1 AND customer_id=$2` and return **404** on mismatch.
+- Response shaping: omit internal notes, cost prices, audit data, billing errors, other customers' data.
+- Actions are not duplicated: the portal frontend calls the existing action endpoints from F09/F10; those already enforce ownership and plan policy.
+- Authorization: role `customer` only on `/me/*` (Admin/Staff receive 403 to avoid confusion).
+- Errors: 401, 403, 404, 422.
+
+**E. Frontend implementation**
+- Pages: `PortalHomePage`, `MySubscriptionsPage`, `MySubscriptionDetailPage`, `MyInvoicesPage`, `MyInvoiceDetailPage` (+ print), links to profile/password pages.
+- Components: `OutstandingSummary`, `SubscriptionCard` (mobile-first cards), `CustomerActionPanel` (buttons from `can_*`, using dialogs shared with F10 where possible), reuse `InvoiceDocument` and `PaymentStateBadge`.
+- Behaviour: queries keyed by `['me', …]`; after any action invalidate related queries; 404 responses render a neutral not-found page (no hints about existence).
+- States: empty states ("You have no subscriptions yet"), skeletons, error with retry.
+- Responsive: designed mobile-first (customers are the likeliest mobile users).
+
+**F. API contract** ([API Spec §8, §11](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/me/subscriptions` | C | `status,page` | 200 list | 403 |
+| GET | `/me/subscriptions/:id` | C | – | 200 (no costs/internal notes) | 404 |
+| GET | `/me/invoices` | C | `payment_state,status,page` | 200 list (never drafts) | 403 |
+| GET | `/me/invoices/:id` | C | – | 200 (+ `payments[]`, **D-17**) | 404 |
+| GET | `/me/invoices/:id/print` | C | – | HTML | 404 |
+
+Actions reused from F09/F10: `POST /quotations/:id/confirm`, `/subscriptions/:id/{pause,resume,renew,close}` (role C, own only).
+
+**G. Edge cases**
+- **IDOR:** every `:id` endpoint with another customer's id returns 404 (tested for each).
+- Admin/Staff token on `/me/*` → 403.
+- Customer user without a linked customer profile.
+- Plan policy changes while the page is open.
+- Invoice for a subscription that was closed; cancelled invoices (show as cancelled, exclude from "amount owed").
+- Customer cannot see draft invoices or quotations still in `draft`.
+- Print of someone else's invoice; deep link while logged out (redirect to login and back).
+
+**H. Testing requirements**
+- *Unit:* response mappers (no leaked fields).
+- *Integration:* two customers with data: customer A can never read B's subscription, invoice, print, or trigger actions on B's records; drafts hidden; role matrix; pagination.
+- *Frontend:* empty/loading/error states; action buttons per `can_*`; not-found page on 404.
+- *End-to-end:* customer registers → staff creates + confirms quotation for them → customer sees it, confirms (if quotation), views invoice later.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] Automated cross-customer isolation tests cover **every** `/me/*` endpoint and every action endpoint reachable from the portal.
+- [ ] The portal works well at ~360 px width.
+- [ ] A customer can complete the journey: sign up → see subscription → view invoice → print it.
+
+---
+
+## 8. Phase 3 – Advanced functionality
+
+### F15 – Discounts (rules, grants and automatic application)
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F06 (product scope), F09 (grants to subscriptions), F11 (invoices, cancel hook), F12 (invoice builder) |
+| **Can be developed independently** | Rule CRUD and grants: yes. Billing application needs F12 merged |
+| **Order** | W6 (rule CRUD may start as soon as F09 is merged) |
+| **Integration points** | Modifies the F12 invoice builder (`applyDiscount` hook) and F11 cancel (`releaseDiscountRedemption` hook); invoice detail shows the discount; subscription detail gets a "Discounts" panel |
+| **Shared files / conflicts** | `billing/invoiceBuilder` (F12 owner reviews); invoice detail page; subscription detail page |
+| **Complexity** | High |
+
+**A. Overview.** Official: **only Admin** creates discount rules — fixed amount or percentage, with minimum purchase and/or quantity, start/end dates and a usage limit — applicable to specific products or whole subscriptions; once it applies it appears on the next invoice on its own and stops when it expires or runs out. *Outcome:* eligible future invoices are discounted automatically, usage is tracked exactly, and the limit cannot be exceeded under concurrency.
+
+**B. User flow** ([Data Flow 6](../architecture/data-flows.md#flow-6-discount-application))
+1. Admin opens **Pricing → Discounts**, clicks "New discount".
+2. Chooses type (fixed/percentage) and value; scope (specific products → product multi-select; or whole subscription); minimum purchase amount and/or minimum quantity; start and end dates; max uses.
+3. Saves; the list shows status chips (*upcoming, current, expired, exhausted*) and `used_count / max_uses`.
+4. Admin or Staff opens a **subscription**, "Discounts" panel → **Grant** an existing discount (or revoke it). *(Granting is required for a discount to apply: D-14.)*
+5. The next billing run evaluates the granted discounts; the best eligible one is applied before tax; the invoice shows the discount line/amounts; usage count increases.
+6. When a discount expires or reaches its limit, later invoices simply do not get it.
+7. If a discounted invoice is cancelled, its use is returned.
+- *Failures:* Staff trying to create/edit a rule → 403; invalid combinations → 422; granting a discount twice → 409.
+
+**C. Database implementation**
+- Tables owned: `discounts` (type/scope `CHECK`s, `value > 0`, percentage ≤ 100, `used_count ≤ max_uses` check), `discount_products`, `subscription_discounts` (unique `(subscription_id, discount_id)`), `discount_redemptions` (unique `invoice_id`, unique `(discount_id, invoice_id)`), per [DB design §4.6](../database/database-design.md).
+- Application inside the invoice transaction: guarded `UPDATE discounts SET used_count = used_count + 1 WHERE id=$1 AND is_active AND (max_uses IS NULL OR used_count < max_uses)`; 0 rows ⇒ the invoice is generated without the discount; then `INSERT discount_redemptions`; line `discount_amount` is stored on `invoice_items`; `invoices.discount_total` updated.
+- Cancel: delete the redemption row and decrement `used_count` in the cancel transaction.
+- Indexes: `(is_active, start_date, end_date)`, `(subscription_id)`, `(discount_id)`.
+
+**D. Backend implementation**
+- Module `modules/discounts/`: CRUD (Admin write; Admin + Staff read), `listRedemptions`, `grant/revoke` handlers (mounted under `/subscriptions/:id/discounts`, Admin + Staff — **D-14**).
+- `billing/discounts.js`: `selectEligibleDiscount(ctx)` and `allocateToLines(amount, lines)` implementing [Billing Engine §4](../architecture/billing-engine.md): eligibility on `period_start` (active, dates, usage, scope, min purchase, min quantity); fixed = `MIN(value, eligible base)`, percentage = `ROUND_HALF_UP(base × value / 100, 2)`; **one discount per invoice**, largest amount wins (ties: lowest id); proportional allocation with cents remainder on the last eligible line.
+- Plugs into F12 via `applyDiscount(ctx)`; plugs into F11 via `releaseDiscountRedemption(tx, invoiceId)`.
+- Validation: `product_ids` required iff scope `products`; `max_uses ≥ used_count` on edit; past invoices are never altered by edits.
+- Errors: 403, 404, 409, 422.
+
+**E. Frontend implementation**
+- Pages: `DiscountListPage` (status filter, search), `DiscountFormPage` (fields toggle with scope/type; percentage shows `%` suffix, fixed shows currency), `DiscountDetailPage` (usage meter, redemptions table).
+- Components: `DiscountStatusChip`, `UsageMeter`, `ProductMultiSelect`, subscription-detail **`DiscountsPanel`** (grant/revoke), invoice-detail discount rows.
+- Behaviour: Staff see read-only list and the grant panel; Admin-only create/edit controls via `useCan`; confirm on revoke; refresh invoice views after grant.
+- States: empty list with a hint, form validation per field, success/error toasts.
+
+**F. API contract** ([API Spec §10 and §8](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/discounts` | A,S | `is_active,status,q` | 200 list with usage | – |
+| POST | `/discounts` | A | rule fields (+ `product_ids`) | 201 | 403, 422 |
+| GET | `/discounts/:id` | A,S | – | 200 | 404 |
+| PATCH | `/discounts/:id` | A | subset | 200 | 403, 422 |
+| GET | `/discounts/:id/redemptions` | A,S | paging | 200 list | 404 |
+| POST | `/subscriptions/:id/discounts` | A,S | `{discount_id}` | 201 | 409, 422 |
+| DELETE | `/subscriptions/:id/discounts/:discountId` | A,S | – | 204 | 404 |
+
+**G. Edge cases**
+- Last remaining use contended by two invoices (exactly one wins; the other has no discount and no error).
+- Discount edited after use (past invoices unchanged).
+- Product-scope discount where no line matches; minimums not reached.
+- Fixed discount larger than the eligible base (capped).
+- Discount expiring the day of billing (evaluated on `period_start`); catch-up periods use their own period date.
+- Multiple eligible discounts (single best applied).
+- Cancelling a discounted invoice returns the use; re-issuing consumes it again.
+- Deactivating a granted discount; revoking after partial usage.
+- Percentage rounding (half-up, per discount) and cents allocation across lines.
+
+**H. Testing requirements**
+- *Unit:* eligibility matrix, amount calculation, allocation with remainders (e.g. 100.00 over 3 equal lines), tie-breaking, worked example from the billing doc.
+- *Integration:* discount appears on the next generated invoice; stops at `end_date` and at `max_uses`; **concurrency test** on the last use; cancel returns the use; Admin-only creation; grant/revoke permissions; edits don't alter past invoices.
+- *Frontend:* form conditional fields, validation messages, usage meter, grant panel.
+- *End-to-end:* admin creates 10 % discount (min quantity 5) → staff grants → billing run → invoice shows discount and correct tax.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] The billing-doc example (5 × 1,560.00, 10 % discount, GST 18 % ⇒ **8,283.60**) passes as an automated test and as a UI walkthrough.
+- [ ] Usage limit is race-safe (proved by a concurrency test).
+- [ ] Expired and exhausted discounts stop applying with no manual step.
+- [ ] Staff cannot create or edit rules (API and UI).
+
+---
+
+### F16 – Finance dashboard and reports
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F11, F13 (revenue and outstanding); F09 (subscription counts); F15 optional |
+| **Can be developed independently** | Yes, with bulk factories |
+| **Order** | W6 |
+| **Integration points** | Reads from nearly everything; drill-down links to invoice, payment, subscription, and customer lists with filters pre-applied |
+| **Shared files / conflicts** | Back-office home route; list pages receive deep-link filters (their owners must support URL-bound filters – already required in F00/F09/F11/F13) |
+| **Complexity** | Medium |
+
+**A. Overview.** Official: the finance lead wants one place to see active subscriptions, revenue received, outstanding amounts, overdue invoices, payments and subscription information, with **filters and a summary view**, and **every page must respond in under two seconds with thousands of subscriptions**. *Who:* Admin and Staff (the finance lead is a Staff account). *Outcome:* a fast dashboard whose numbers reconcile with the underlying lists.
+
+**B. User flow**
+1. Staff/Admin opens **Dashboard** (default: current month).
+2. KPI cards: active subscriptions (and paused), revenue received, invoiced amount, outstanding, overdue (amount + count), upcoming billing next 7 days.
+3. Changes the date range / filters (plan, status, customer, method); cards and tables refresh.
+4. Tables: overdue invoices (oldest first), outstanding by customer, recent payments, subscriptions by status/plan.
+5. Clicking a number or row drills down to the corresponding list with the same filters.
+- *Failures:* a section failing shows an error card with retry while other sections still render; empty ranges show zeros, not errors.
+
+**C. Database implementation**
+- No new tables. All figures come from aggregate SQL (`COUNT`, `SUM … GROUP BY`) over `subscriptions`, `invoices`, `payments`/`payment_allocations`; nothing is aggregated in Node.
+- Definitions (consistent with the billing doc): *Revenue received* = sum of non-void payment allocations by `payment_date`; *Outstanding* = `Σ amount_due` of `confirmed` invoices; *Overdue* = outstanding with `due_date < today`; drafts and cancelled invoices excluded. MRR/ARR definition is **D-20**.
+- Indexes to confirm via `EXPLAIN ANALYZE`: partial `(due_date) WHERE status='confirmed' AND amount_due>0`, `(status, issue_date)`, `(payment_date)`, `(status, expiry_date)`. Add an index only with measured justification, through a new migration.
+- Includes a **bulk-data seed script** (≈ 5,000 subscriptions, ≈ 60,000 invoices, payments) to prove the 2-second target.
+
+**D. Backend implementation**
+- Module `modules/reports/`: `summary(dateFrom, dateTo, filters)`, `revenue(groupBy)`, `subscriptionsBreakdown`, `invoicesBreakdown`, `overdue(page)`, `outstandingByCustomer(page)`, `payments(groupBy)`. SQL kept in a repository file with comments explaining each definition.
+- Authorization: Admin + Staff. Each endpoint accepts `date_from/date_to` (default current month), validated (range ≤ e.g. 2 years).
+- Performance rules: parameterized single queries per widget, no N+1, paginated tables, response sizes small; log slow queries (> 500 ms).
+- Errors: 422 invalid range/filter, 403.
+
+**E. Frontend implementation**
+- Pages: `DashboardPage`, optional `ReportsPage` tabs (Revenue, Subscriptions, Invoices, Overdue, Outstanding, Payments).
+- Components: `KpiCard` (value, label, delta optional, link), `DateRangePicker`, `FilterBar` (shared), `SummaryTable`, `OverdueTable`, simple chart for revenue over time (library choice **pending**; a table is acceptable if no chart library is adopted).
+- Behaviour: each widget fetches independently with its own loading/error state; filters stored in the URL; money from API strings; click-through links with query params.
+- States: skeleton cards, empty tables, partial failures isolated; responsive grid (cards stack on mobile).
+
+**F. API contract** ([API Spec §13](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/dashboard/summary` | A,S | `date_from,date_to` | 200 KPI object | 422 |
+| GET | `/reports/revenue` | A,S | `group_by,method,customer_id` | 200 series | 422 |
+| GET | `/reports/subscriptions` | A,S | `status,plan_id,billing_frequency,group_by` | 200 rows | 422 |
+| GET | `/reports/invoices` | A,S | `status,payment_state,customer_id` | 200 rows | 422 |
+| GET | `/reports/overdue` | A,S | `min_days_overdue,customer_id,page` | 200 list + summary | 422 |
+| GET | `/reports/outstanding-by-customer` | A,S | `page,sort` | 200 list | – |
+| GET | `/reports/payments` | A,S | `method,group_by` | 200 rows | 422 |
+
+**G. Edge cases**
+- Empty database; date range with no data; very large ranges.
+- Voided payments excluded; cancelled/draft invoices excluded.
+- Timezone boundaries on month start/end (**D-22**).
+- Partially paid invoices counted once in outstanding.
+- Dashboard open while a billing run or payment changes the numbers (manual refresh; optional auto-refresh).
+- Staff vs Admin identical numbers; customers receive 403.
+
+**H. Testing requirements**
+- *Unit:* date-range parsing/defaults.
+- *Integration:* seeded fixtures with known totals compare every KPI with an independent SQL query; payment void changes revenue; filters; role matrix; **performance test** on the bulk dataset asserting each endpoint < 2 s (record timings in the PR).
+- *Frontend:* KPI rendering from a mocked response, filter-to-URL binding, per-widget error isolation.
+- *E2E/manual:* run billing, record a payment, see numbers move.
+
+**I. Definition of Done** — Common DoD plus:
+- [ ] Every number on the dashboard reconciles with the corresponding list page (same filters) on the bulk dataset.
+- [ ] Measured: all dashboard/report endpoints and the main list pages respond in < 2 s locally with ≥ 5,000 subscriptions (numbers recorded).
+- [ ] Drill-down links land on correctly pre-filtered lists.
+
+---
+
+### F17 – Audit log viewer
+
+| Field | Value |
+|---|---|
+| **Prerequisites** | F00 (table + logger); more useful after F09–F13 produce entries |
+| **Can be developed independently** | Yes |
+| **Order** | W6 (small; good for a developer who finished early) |
+| **Integration points** | Entity "history" tabs link here; subscription history (F09) uses the same data |
+| **Shared files / conflicts** | none significant |
+| **Complexity** | Low |
+
+**A. Overview.** Proposed (P-4): auditability of who changed what. Admins can search the append-only `audit_logs`. *Outcome:* traceability for staff creation, catalogue/tax/discount changes, state transitions, payments, voids, and manual billing runs.
+
+**B. User flow**
+1. Admin opens **Settings → Audit log**.
+2. Filters: entity type, entity id, actor, action, date range; paginated newest-first list.
+3. Opens a row → side panel with old/new values (changed fields), actor, IP, timestamp.
+4. Links on entity pages ("View history") open the log pre-filtered.
+- *Failures:* Staff/Customer → 403.
+
+**C. Database implementation**
+- Table `audit_logs` (F00). Read-only here. Indexes `(entity_type, entity_id, created_at DESC)` and `(actor_user_id, created_at DESC)`. Application DB role has insert/select only on this table.
+- Large table: keyset or offset pagination with a capped `page_size`; filters must use indexed columns.
+
+**D. Backend implementation**
+- Module `modules/audit/`: `list(filters)`. Admin only. No write endpoints (writes happen via the F00 logger inside each feature's transaction).
+- Mask nothing secret: ensure loggers never write password hashes/tokens into `old_values/new_values` (reviewed and tested here).
+- Errors: 403, 422.
+
+**E. Frontend implementation**
+- Page `AuditLogPage` with `FilterBar`, `DataTable`, `AuditDetailDrawer` (JSON diff view of changed fields); reusable `EntityHistoryLink`.
+- States: empty result, loading skeleton, error retry; responsive drawer becomes full screen on mobile.
+
+**F. API contract** ([API Spec §13](../api/api-specification.md))
+
+| Method | Path | Auth | Request | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/audit-logs` | A | `entity_type,entity_id,actor_user_id,action,date_from,date_to,page` | 200 list | 403, 422 |
+
+**G. Edge cases** — unfiltered query over a huge table (require a date range or cap pagination); JSON values containing sensitive fields (verify none); system actor (`actor_user_id` null) rendering; deleted users.
+
+**H. Testing requirements** — *Unit:* filter schema. *Integration:* Admin-only; filters; no hash/token present in entries created by auth flows. *Frontend:* filters, drawer rendering, empty state.
+
+**I. Definition of Done** — Common DoD plus: [ ] audit entries produced by at least subscription transitions, payments, and staff creation are visible and filterable; [ ] a test asserts no sensitive data in log payloads.
+
+---
+
+### F18 – Notifications and reminders (OPTIONAL – needs a team decision)
+
+| Field | Value |
+|---|---|
+| **Status** | **Not scheduled** until **D-19** is decided. Nothing in the problem statement requires reminders; sending an invoice and password reset are covered by F11 and F02. |
+| **Prerequisites** | F11, F12, F13 |
+| **Can be developed independently** | Yes |
+| **Complexity** | Medium |
+
+**A. Overview.** Optional (P-7): renewal reminders before expiry, overdue-invoice reminders, and retrying unsent confirmed invoices. *Outcome (if adopted):* fewer missed renewals and late payments.
+
+**B. User flow (if adopted).** A daily job finds subscriptions expiring within N days and confirmed overdue invoices; sends one email per item per reminder window; staff see "last reminded" on the subscription/invoice and can trigger a manual reminder from the overdue list.
+
+**C. Database implementation.** Requires a **schema change that the database design does not contain** (a "last reminded" marker or a notification log table). Per the rules in §3.4 the owner must first propose the change in the database design doc and have it approved. Reads: `subscriptions`, `invoices`, `customers`.
+
+**D. Backend implementation.** Registered jobs `sendRenewalReminders`, `sendOverdueReminders`, `retryUnsentInvoices` (idempotent; de-duplicated by the marker; emails sent outside DB transactions through `lib/mailer`; failures logged, never block other items). A manual reminder endpoint is **not in the API Spec** and must be specified first.
+
+**E. Frontend implementation.** "Last reminded" column/badge on overdue and expiring lists, "Send reminder" button with confirm dialog, success/error toasts. (Small by design: the value of this feature is mostly in the job.)
+
+**F. API contract.** To be defined if adopted (not part of the current API Spec).
+
+**G. Edge cases.** Duplicate reminders after a restart; customer without email; invoice paid between selection and send; very large batches; unsubscribe/consent (**pending**).
+
+**H. Testing requirements.** Jobs with a fake clock and mail stub; de-duplication; failure isolation; frontend button states.
+
+**I. Definition of Done.** Common DoD plus: [ ] schema change documented and approved; [ ] each reminder is sent at most once per window (tested).
+
+---
+
+## 9. Phase 4 – Integration, testing and stabilization
+
+These are **work packages, not features**: they cut across features. To keep full-stack ownership, **every developer takes a slice of each package that touches both backend and frontend**, and nobody only tests their own feature.
+
+| ID | Work package | Backend part | Frontend part | Exit criteria |
+|---|---|---|---|---|
+| **S1** | Authorization and isolation test suite | For every endpoint × role (Admin, Staff, Customer, anonymous) assert the matrix of [Security & RBAC §2](../architecture/security-and-rbac.md) and [API Spec §14](../api/api-specification.md); IDOR tests for all `:id` routes | Verify menus/routes match the matrix; 401/403/404 pages and redirects | Matrix test passes; no hidden-in-UI-only protection exists |
+| **S2** | Performance and scale | Bulk seed (≈ 5,000 subscriptions, ≈ 60,000 invoices); `EXPLAIN ANALYZE` of list/report queries; fix N+1 and missing indexes (new migrations) | Check list/dashboard rendering and pagination at scale; skeleton behaviour | All main pages < 2 s locally; timings recorded |
+| **S3** | End-to-end scenario and demo data | Seed script producing the demo story (customers, plans, variants, discounts, due subscriptions) | Scripted walkthrough through every role; E2E automation if **D-07** allows | Demo runs end to end from an empty database in < 10 minutes |
+| **S4** | Responsive and UX consistency | Error messages and validation text review | Pass over every screen at 360/768/1280 px; consistent colours, spacing, empty/loading/error states, navigation placement | Checklist signed per screen by someone who didn't build it |
+| **S5** | Documentation and setup sync | Update API spec/DB docs where implementation differs; mark implemented vs planned | README setup; screenshots optional | A fresh clone runs by following the README only; docs match behaviour |
+
+**Cross-testing rule:** each person tests another person's feature end to end (bug-bash), filing issues instead of fixing silently.
+
+**Integration checkpoints** (run at the end of each wave on `main`):
+1. W2: register → login → create staff → create customer works as Admin/Staff/Customer.
+2. W3: template → quotation → confirmed.
+3. W4: activate/pause/renew/close; invoice confirm/cancel/send/print on factory data.
+4. W5: **full loop** – active subscription → billing run → confirm invoice → record payment → Paid → customer sees it.
+5. W6: discounts change the invoice; dashboard numbers match.
+
+---
+
+## 10. Feature assignment table and allocation approach
+
+### 10.1 Consolidated table
+
+| Feature ID | Feature | Scope | Dependencies | Parallelizable | Estimated Complexity |
+|---|---|---|---|---|---|
+| F00 | Shared foundations | Repo/tooling, DB baseline, backend conventions, frontend shell and shared components, reference slice | D-02…D-08 decided | Split among everyone, then reviewed together | High |
+| F01 | Registration, login, session | Auth endpoints, password policy, login/register UI, route guards | F00 | Yes (W1) | Medium |
+| F02 | Password reset and change | Token table, emails, 3 endpoints, 3 pages | F00 (F01 for the link) | Yes (W1) | Medium |
+| F03 | Staff accounts and role navigation | Staff CRUD (Admin), menu visibility by role, forbidden page | F00, F01 | Yes (W2) | Low |
+| F04 | Customer management | Customer CRUD, own profile, `CustomerSelect` | F00, F01 | Yes (W2) | Low |
+| F05 | Taxes and payment terms | Two small CRUD modules, selects, seed | F00 | Yes (W1) | Low |
+| F06 | Products and variants | Catalogue CRUD, price adjustment, effective price | F00 | Yes (W1) | Medium |
+| F07 | Plans and policies | Plan CRUD, policies, plan products, availability helper | F06 | Yes (W2) | Medium |
+| F08 | Quotation templates | Template CRUD, `LineItemsEditor` | F05, F06, F07 | Yes (W3, first) | Medium |
+| F09 | Quotations and subscription creation | Subscription tables, numbering, lines/snapshots, Draft→Quotation→Confirmed, lists/detail | F04, F05, F06, F07, F08 | Partly (after F08 migration) | High |
+| F10 | Subscription operations and scheduled lifecycle | Activate, pause, resume, renew, close, expiry/quote jobs, UI actions | F09 | Yes (W4) | High |
+| F11 | Invoice management | Invoice tables, list/detail, confirm/cancel/send/print, `payment_state` | F04, F09 | Yes (W4) | Medium |
+| F12 | Recurring billing engine and runs | Periods, run orchestration, builder, catch-up, billing UI, manual create | F09, F11 (F10) | Yes (W5; start first) | High |
+| F13 | Payments | Payment tables, record/allocate/void, outstanding/overdue tracking | F11, F04 | Yes (W5) | High |
+| F14 | Customer portal | `/me/*` endpoints, portal pages, customer actions | F01, F04, F09, F10, F11 (F13) | Yes (W5) | Medium |
+| F15 | Discounts | Rule CRUD, grants, billing integration, usage limits | F06, F09, F11, F12 | Rule CRUD earlier; billing part after F12 | High |
+| F16 | Finance dashboard and reports | Aggregate endpoints, dashboard UI, bulk seed, performance proof | F09, F11, F13 (F15) | Yes (W6) | Medium |
+| F17 | Audit log viewer | One endpoint, filterable log UI | F00 (more useful later) | Yes (W6) | Low |
+| F18 | Notifications and reminders (optional) | Reminder jobs, last-reminded UI | F11, F12, F13 + schema change | Yes, only if adopted | Medium |
+| S1–S5 | Stabilization packages | Cross-cutting tests, performance, demo, UX, docs | all features | Split across everyone | Medium |
+
+### 10.2 Suggested allocation approach (team size not assumed)
+
+**Principles**
+1. **One feature, one owner, full stack.** The owner does migration → backend → frontend → tests; a different person reviews.
+2. **Everyone gets both sides early.** Give every developer their first feature from W1 and require a frontend **and** backend contribution in F00.
+3. **Mix difficulty.** Over the project, give each developer roughly one High feature plus Low/Medium ones; avoid giving one person all High features.
+4. **Experience-aware, not role-locked.** Beginners start with the lowest-risk, most pattern-like features (F05, then F03/F04), then move to F06/F07, and may take a High feature later with a pair partner. Strong developers take the critical-path features (F09, F12, F13) but still own their frontend.
+5. **Critical path first.** F06 → F07 → F08 → F09 → F11 → F12 must never wait for an owner; assign them before optional work.
+6. **Pairing rule for High features:** F09, F10, F12, F13, F15 are owned by one person with a named pair-reviewer who reviews every PR within hours.
+7. **Rotate reviews** so each person reviews at least two features outside their own.
+8. **Finish before starting:** a feature is "taken" only when its owner has no other unfinished feature on the board, except while blocked.
+
+**Allocation algorithm (works for any team size N)**
+1. After F00, give each of the first *N* available W1 features (F01, F05, F06, F02 — in that priority order) to different people.
+2. As each owner finishes (merged and DoD met), they take the next feature whose prerequisites are merged, prioritizing the **critical path**, then the longest remaining chain, then optional features.
+3. If N is smaller than the number of W1 features, defer F02 first (it is off the critical path).
+4. If N is larger than the number of ready features, extra people **pair** on F09/F12 sub-parts or start S2/S3 packages early (seed scripts, test factories) — still inside a feature, not as a separate "frontend only" or "backend only" job.
+
+**Illustration only** (a team of four; not a requirement, and the allocation should be adjusted to experience):
+
+| Person | First feature | Then | Later |
+|---|---|---|---|
+| Dev 1 | F01 | F03 → F09 | F10 |
+| Dev 2 | F05 | F04 → F11 | F13 |
+| Dev 3 | F06 | F07 → F08 | F12 |
+| Dev 4 | F02 | F14 (after F11) | F15 |
+| Whoever frees up first | F16, F17 | S1–S5 split evenly | F18 only if approved |
+
+In this illustration each person gets a mix of Low/Medium/High features and touches both frontend and backend in every one of them; the critical-path features (F09, F12, F13) are given to different people so that review capacity stays available.
+
+---
+
+## 11. Pending decisions register
+
+None of these is invented as a requirement. Each row names the default assumed in this handbook so work can proceed; if the team decides otherwise, update this table and the affected feature.
+
+| ID | Decision | Default used here | Features affected |
+|---|---|---|---|
+| **D-01** | `docs/architecture/user-access-and-authorization.md` describes a Go/OIDC multi-product access platform (entitlements, policy versions, per-product sessions, signed webhooks, organizations, MFA) that conflicts with the problem statement, the Node/Express stack, and the database design. Retire it, relabel it "future research", or adopt it (which would require redesigning the other documents). | **Out of scope.** No feature is derived from it. | all (none) |
+| D-02 | JavaScript vs TypeScript (and the decimal library for money) | JavaScript + Zod + JSDoc; `decimal.js` or integer minor units | F00 |
+| D-03 | ORM and migration tool (Prisma vs Knex/Drizzle); handling of the single `schema.prisma` file | Prisma + hand-written SQL for constraints | F00, all DB owners |
+| D-04 | Session mechanism: cookie-JWT vs server-side session table; ending sessions after password reset (needs `password_changed_at` or a session table – a DB doc change) | Cookie-JWT, re-checked against `users.is_active` per request; no promise of revocation after reset | F01, F02, F03 |
+| D-05 | Password hashing library | argon2id (bcrypt cost ≥ 12 as fallback) | F01, F02, F03 |
+| D-06 | UI approach (Tailwind vs component library) | Tailwind | F00, all frontend |
+| D-07 | End-to-end test tool | Undecided; Playwright suggested but **not** part of the architecture doc; until decided, a documented manual script | all (section H), S3 |
+| D-08 | How the first Admin is created | Seed script reading credentials from env | F00 |
+| D-09 | Duplicate customer emails; linking a staff-created customer to a later self-registered user | Warn on duplicates; no automatic linking | F01, F04 |
+| D-10 | Quotation templates: delete vs deactivate (DB has no `ON DELETE` rule for `subscriptions.template_id`) | Deactivate; delete only if unreferenced | F08, F09 |
+| D-11 | Meaning of `plans.price` next to line prices | Informational default; invoices use subscription lines | F07, F09 |
+| D-12 | Billing emails and auto-confirm | Runs send nothing; drafts confirmed by staff; `BILLING_AUTO_CONFIRM` off | F11, F12 |
+| D-13 | Overdue grace days | 0 | F11, F13, F16 |
+| D-14 | Discounts: stacking, automatic application without a grant, who may grant | One per invoice, explicit grant required, Admin + Staff may grant | F15 |
+| D-15 | Payment `Idempotency-Key` (no storage in the schema) | Not implemented; unique reference + invoice lock + UI guard | F13 |
+| D-16 | Early-close `effective_date` semantics | Ignored (immediate) | F10 |
+| D-17 | Customer visibility of quotations/drafts; endpoint for payment history | Drafts hidden; quotations visible; payments embedded in `GET /me/invoices/:id` | F09, F14 |
+| D-18 | Backdated subscription start | Admin only | F09, F12 |
+| D-19 | Reminder emails (needs a schema change) | Not included (F18 unscheduled) | F18 |
+| D-20 | MRR/ARR definition and CSV export | Not included | F16 |
+| D-21 | Pause effect on expiry date | Resume extends expiry by the paused days | F10, F12 |
+| D-22 | Business time zone | `Asia/Kolkata` | F10, F11, F12, F16 |
+| D-23 | List of `product_type` values | `service, software, addon, physical` | F06 |
+| D-24 | Inactive tax rule still referenced by subscription lines | Existing lines keep using it; UI warns | F05, F12 |
+| D-25 | More than one tax per line | One tax rule per line | F05, F08, F09, F12 |
+| D-26 | Staff visibility of product cost price | Staff can view (read-only); customers never | F06, F14 |
+| D-27 | May Staff trigger "Run billing now"? | No (Admin only; Staff may view runs) | F12 |
+| D-28 | Editing lines of an `active` subscription | Allowed for Admin/Staff; affects **future** invoices only | F09, F12 |
+| D-29 | Closing a subscription that has unpaid or draft invoices | Allowed; invoices remain; UI shows a notice | F10, F11 |
+
+---
+
+## 12. Coverage verification
+
+### 12.1 Official requirements ([System Architecture §5.1](../architecture/system-architecture.md))
+
+| Requirement | Feature(s) |
+|---|---|
+| F-AUTH-1 Registration, unique email | F01 |
+| F-AUTH-2 Password policy (> 8, upper, lower, special) | F00 (`passwordSchema`), F01, F02, F03 |
+| F-AUTH-3 Password reset by email link | F02 |
+| F-AUTH-4 Role-based access (Admin/Staff/Customer) | F00 (middleware, permission map), F03, S1 |
+| F-AUTH-5 Only Admin creates staff | F03 |
+| F-PRD-1 Product attributes | F06 |
+| F-PRD-2 Variants with price adjustment | F06 |
+| F-PLN-1 Plan price, frequency, min quantity, availability | F07 |
+| F-PLN-2 Auto-closure; early-close / pause / renew policies | F07 (policies), F10 (enforcement and jobs) |
+| F-QUO-1 Quotation templates | F08 |
+| F-QUO-2 Validity, customer, lines, tax, total | F09 |
+| F-SUB-1 / F-SUB-2 Subscription number, dates, terms, lines | F09 |
+| F-SUB-3 Lifecycle Draft → Quotation → Confirmed → Active → Closed, visible to staff | F09 (first three), F10 (Active/Closed) |
+| F-INV-1 Automatic invoice generation | F12 |
+| F-INV-2 Confirm / cancel / send / print; Draft → Confirmed → Paid | F11 (actions), F13 (Paid) |
+| F-INV-3 Never billed twice or skipped | F12 (+ unique index from F11) |
+| F-TAX-1 Admin tax rules, automatic calculation | F05 (rules), F09 (estimates), F12 (invoice calculation) |
+| F-DSC-1 / F-DSC-2 Admin-only discounts, scope, limits, auto-apply | F15 |
+| F-PAY-1 Record payments | F13 |
+| F-PAY-2 Paid / outstanding / overdue visibility | F11 (`payment_state`), F13, F16 |
+| F-RPT-1 Finance dashboard with filters, < 2 s | F16, S2 |
+
+### 12.2 Proposed additions (P-1 … P-7)
+P-1 cancelled invoice → F11 · P-2 pause flag / renewal → F10 · P-3 payment terms → F05 · P-4 audit log → F00 (logger), F17 (viewer) · P-5 void payments → F13 · P-6 billing run log and "Run now" → F12 · P-7 emails → F02 (reset), F11 (send invoice), F18 (reminders, optional).
+
+### 12.3 Data flows and state machines
+Flow 1 registration → F01 (+F02) · Flow 2 product/plan creation → F06, F07 · Flow 3 quotation to subscription → F08, F09, F10 · Flow 4 recurring billing → F12 (+F15 discounts) · Flow 5 payment processing → F13 · Flow 6 discount application → F15 · Flow 7 renewal → F10 · Flow 8 customer portal → F14.
+Subscription state machine → F09 (to Confirmed/cancel) + F10 (Active/Closed, pause, renew) · Invoice state machine → F11 (draft/confirm/cancel) + F13 (paid/void).
+
+### 12.4 Non-functional requirements
+Performance < 2 s → F16, S2 · Security/RBAC → F00, F03, S1 · Validation → every feature (Common DoD) and F00 shared schemas · Responsiveness/consistency → F00 components, S4 · Dynamic data → Common DoD · Auditability → F00, F17 · Local/offline development → F00 · Reliability of billing → F12 · Data integrity → each migration owner.
+
+### 12.5 Database coverage
+All 25 tables have exactly one owner (§3.5). Entity list from the original assignment — Users, Roles, Customers, Products, Variants, Plans, Plan–Product, Quotation Templates and Items, Subscriptions and Items, Tax Rules, Invoice Tax Details, Discounts, Discount Applicability, Subscription Discounts, Invoices and Items, Payments, Payment Allocations, Audit Logs — maps to F00, F05, F06, F07, F08, F09, F11, F13, F15.
+
+### 12.6 API coverage
+Every endpoint group in [API Spec §2–§13](../api/api-specification.md) is assigned: Auth F01/F02 · Users F03 · Customers F04 (+`/me/profile`) · Products and variants F06 · Plans F07 · Templates F08 · Quotations F09 · Subscriptions list/create/edit/history F09, operations F10, invoices-of-subscription F12, discount grants F15, `/me/*` F14 · Taxes and payment terms F05 · Discounts F15 · Invoices F11 (manual create F12, payments-of-invoice F13, `/me/*` F14) · Billing runs F12 · Payments F13 · Dashboard and reports F16 · Audit logs F17.
+
+---
+
+## 13. Deliberately not included
+
+These ideas appear in generic subscription products but are **not** in this project's requirements or architecture, so no feature was created for them. Adding any of them requires a team decision and design-doc updates first.
+
+- Subscription **upgrades/downgrades** and proration (plan changes mid-term).
+- **Refunds, credit notes, customer credit balances**, and over-payment handling.
+- **Payment gateway** integration and payment-failure retry/dunning (payments are recorded manually; a gateway is optional per the architecture).
+- Multi-currency, multi-tenant, mobile apps.
+- The multi-product identity/entitlement/session platform described in `user-access-and-authorization.md` (see **D-01**).
+- Analytics beyond the finance dashboard and reports in the API spec.
+
