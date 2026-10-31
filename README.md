@@ -28,7 +28,7 @@ This project is developed by:
 
 ## Documentation
 
-Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design. The application is at the **early implementation stage**: F01 authentication (registration, login, logout and sessions) and F06 (products and variants) are implemented end-to-end; remaining business features are still in the scaffold stage.
+Architecture and planning documents live in docs/. They describe the proposed design. The application is at the early implementation stage: F01 (Authentication), F03 (Staff), and F06 (Products & variants) are implemented end-to-end, while other business features remain in the scaffold stage.
 
 | Document | Description |
 |---|---|
