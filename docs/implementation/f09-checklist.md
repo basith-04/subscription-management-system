@@ -8,21 +8,22 @@ Status: **blocked on prerequisites**. This is not a completed feature.
   state-machine, billing and ownership conventions.
 - [x] Identify the existing F06 `computeEffectivePrice`, F07
   `assertPlanAvailable`, shared money helper, auth middleware and audit writer.
-- [ ] F04: merge the reviewed customer implementation and `CustomerSelect`;
-  `origin/feat/Customer-management` contains unmerged work, while main has
-  customer placeholders.
+- [x] F04: merge the customer implementation and `CustomerSelect` from main.
 - [ ] F05: implement and integrate tax rules and payment terms, their migrations,
-  active-record lookups and selectors. Main currently contains placeholders.
+  active-record lookups and selectors. Main currently contains placeholders;
+  [PR #12](https://github.com/basith-04/subscription-management-system/pull/12)
+  is open and should be reviewed and merged by its owner first. Its shared auth,
+  database and frontend-context changes require integration review.
 - [ ] F08: integrate quotation template migrations, `getTemplateForUse`,
   `TemplateSelect` and `LineItemsEditor`. Main currently has placeholders and
   no F08 migration or editor.
 - [ ] F00/F09: implement the shared conditional transition helper and F09-owned
   subscription state machine once their integration contract is coordinated.
-- [ ] Repair the current main baseline before end-to-end work: backend route
-  registry does not parse; frontend `StaffListPage` fails typecheck; the two
-  identity baselines both create `roles`/`users`, and the F07 migration sorts
-  before its F06 prerequisites. Reconcile those through the owning features,
-  without editing previously merged migrations or inventing production tables.
+- [ ] Repair remaining main baseline defects before end-to-end work: frontend
+  `StaffListPage` fails typecheck; F06 product tests use obsolete demo identity
+  headers; the two identity baselines both create `roles`/`users`, and the F07
+  migration sorts before its F06 prerequisites. Reconcile those through the
+  owning features without editing merged migrations or inventing tables.
 
 ## Independent F09 work
 
@@ -48,10 +49,11 @@ Status: **blocked on prerequisites**. This is not a completed feature.
 
 ## Preflight evidence
 
-At `origin/main` commit `e61b8ea`, the backend full suite reported 84 passing
-tests, 27 skipped and 4 failed suites because the route registry cannot parse.
-Backend typecheck and lint fail at that same pre-existing syntax error. On a
-new isolated PostgreSQL 16 database, the unscoped migration runner fails because
-both baseline migrations create `roles`. Frontend tests pass (26); frontend build
-fails because `StaffListPage.tsx` has an unused `navigate` parameter. These
-failures predate the F09 pricing change and must be fixed by their owners.
+At `origin/main` commit `6feb0ec`, backend typecheck, lint and build pass (lint
+has an existing unused-import warning). The full backend suite against an
+isolated PostgreSQL 16 database reports 186 passing tests and three failing F06
+product tests because those tests send demo headers rather than session cookies.
+Frontend tests pass (42), while its build fails because `StaffListPage.tsx` has
+an unused `navigate` parameter. The unscoped migration runner previously failed
+on an empty PostgreSQL 16 database because both baseline migrations create
+`roles`; neither migration changed in the F04 merge. These failures predate F09.
