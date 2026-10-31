@@ -151,6 +151,14 @@ jobs:
             bun run lint
           fi
 
+      - name: Test
+        run: |
+          if [ "${{ matrix.runtime }}" = "node" ]; then
+            npm test
+          else
+            bun run test
+          fi
+
       - name: Build
         run: |
           if [ "${{ matrix.runtime }}" = "node" ]; then

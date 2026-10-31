@@ -61,6 +61,8 @@ function App() {
         <nav className="nav" aria-label="Main navigation">
           <a href="#capabilities">Capabilities</a>
           <a href="#status">Status</a>
+          <a href="/login">Sign in</a>
+          <a href="/register">Register</a>
           <a href="/docs/api/api-specification.md">API docs</a>
         </nav>
       </header>

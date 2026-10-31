@@ -3,8 +3,8 @@
 React + TypeScript single-page application for the Brightloop Subscription
 Management System, built with Vite.
 
-> **Status:** Base scaffold. The UI is a landing/status page; business screens
-> will be added against the contract in
+> **Status:** F01 registration, login and protected portal/back-office shells
+> are implemented; remaining business screens will be added against the contract in
 > [`docs/api/api-specification.md`](../docs/api/api-specification.md).
 
 ## Stack
@@ -45,6 +45,7 @@ rest of the page still renders.
 | `npm run build` | Type-check and build to `dist/` |
 | `npm run typecheck` | Run the TypeScript compiler only |
 | `npm run lint` | Run Oxlint |
+| `npm test` | Run authentication component tests |
 | `npm run preview` | Serve the production build locally |
 
 ## Node.js and Bun
@@ -58,6 +59,7 @@ Both package managers are supported and both lockfiles (`package-lock.json` and
 | Dev | `npm run dev` | `bun run dev` |
 | Build | `npm run build` | `bun run build` |
 | Lint | `npm run lint` | `bun run lint` |
+| Test | `npm test` | `bun run test` |
 
 ## Docker
 
@@ -99,6 +101,7 @@ frontend/
 ├── public/                  # static assets (favicon)
 ├── src/
 │   ├── lib/api.ts           # fetch wrapper, envelope handling, API types
+│   ├── features/auth/       # registration, login, route guards, auth queries
 │   ├── App.tsx              # landing page + API status
 │   ├── App.css              # page styles
 │   ├── index.css            # global reset

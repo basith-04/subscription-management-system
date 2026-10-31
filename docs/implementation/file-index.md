@@ -31,6 +31,24 @@ Three purposes:
 
 ## 1. Backend — `backend/`
 
+F01 frontend additions: `frontend/src/features/auth/` contains the login and
+registration pages, password field, auth layout, guarded shells, query hook,
+route guards, CSS and component tests. These implement the F01 paths; password
+reset screens remain pending F02.
+
+| F01 frontend file | Status | Purpose |
+|---|---|---|
+| `frontend/src/features/auth/AccountShell.tsx` | EXISTING | Minimal authenticated portal and back-office shells with logout. |
+| `frontend/src/features/auth/AuthLayout.tsx` | EXISTING | Authentication layout and card. |
+| `frontend/src/features/auth/LoginPage.tsx` | EXISTING | Login form and role-based routing. |
+| `frontend/src/features/auth/RegisterPage.tsx` | EXISTING | Customer registration form. |
+| `frontend/src/features/auth/PasswordField.tsx` | EXISTING | Password input and rule checklist. |
+| `frontend/src/features/auth/schemas.ts` | EXISTING | Frontend authentication validation. |
+| `frontend/src/features/auth/guards.tsx` | EXISTING | Authentication and role route guards. |
+| `frontend/src/features/auth/useAuth.ts` | EXISTING | Cached current-user query and safe return paths. |
+| `frontend/src/features/auth/auth.css` | EXISTING | Authentication form styles. |
+| `frontend/src/features/auth/auth.test.tsx` | EXISTING | Authentication component and guard tests. |
+
 ### 1.1 Entry, config and version (EXISTING)
 
 | File | Status | Owner | Purpose |
