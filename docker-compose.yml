@@ -37,6 +37,9 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-Administrator}
+      STAFF_EMAIL: ${STAFF_EMAIL:-}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:-}
+      STAFF_FULL_NAME: ${STAFF_FULL_NAME:-Staff}
     depends_on:
       db:
         condition: service_healthy

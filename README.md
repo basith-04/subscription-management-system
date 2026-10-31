@@ -131,7 +131,7 @@ docker build --target bun  -t brightloop-web:bun  ./frontend
 Compose can be configured with environment variables or a root `.env` (see
 [`.env.example`](.env.example)): `RUNTIME`, `API_PORT`, `WEB_PORT`,
 `POSTGRES_*`, `JWT_SECRET`, `COOKIE_SECURE`, `ALLOWED_ORIGINS`, and the optional
-`ADMIN_*` seed variables. Local Compose defaults to `APP_ENV=development`
+`ADMIN_*` / `STAFF_*` seed variables. Local Compose defaults to `APP_ENV=development`
 and plain HTTP, so `COOKIE_SECURE=false` is used there. For production, set
 `APP_ENV=production`, use HTTPS and set `COOKIE_SECURE=true`. The
 web container proxies `/api/` to `http://api:4000`, so keep the Compose service

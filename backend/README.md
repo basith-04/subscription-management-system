@@ -72,6 +72,8 @@ The API starts on `http://localhost:4000`. `db:migrate` creates the F00
 baseline (`roles`, `users`, `customers`, `audit_logs`). `db:seed` inserts the
 three roles and, when `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set, the first
 admin account (D-08). Both commands are idempotent.
+An optional initial staff account can similarly be created with `STAFF_EMAIL`
+and `STAFF_PASSWORD`; existing accounts are never overwritten.
 
 For tests, create a separate database and point `TEST_DATABASE_URL` at it:
 
@@ -118,6 +120,7 @@ curl http://localhost:4000/api/v1/health
 | `RATE_LIMIT_MAX` | `10` | Credential attempts per window per IP and per IP + email |
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Rate-limit window (15 minutes) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Optional first-admin seed (D-08) |
+| `STAFF_EMAIL` / `STAFF_PASSWORD` | — | Optional initial staff seed |
 
 Secrets belong in `.env` (ignored by Git) or the deployment environment — never
 in the repository.

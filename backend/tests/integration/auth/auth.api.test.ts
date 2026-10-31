@@ -10,7 +10,7 @@ import {
   expect,
   it,
 } from 'vitest'
-import { seedAdmin } from '../../../db/seed.js'
+import { seedAdmin, seedStaff } from '../../../db/seed.js'
 import { createTestApp } from '../../helpers/app.js'
 import {
   canConnect,
@@ -327,6 +327,15 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
       expect(response.status).toBe(200)
       expect(response.body.data.role).toBe('admin')
     })
+
+    it('allows an environment-seeded staff account to log in without overwriting it', async () => {
+      const env = { STAFF_EMAIL: 'seeded-staff@example.com', STAFF_PASSWORD: 'Seeded!Pass123', STAFF_FULL_NAME: 'Seeded Staff' } as NodeJS.ProcessEnv
+      expect(await seedStaff(pool, env)).toBe(true)
+      expect(await seedStaff(pool, env)).toBe(false)
+      const response = await request(app).post('/api/v1/auth/login').send({ email: env.STAFF_EMAIL, password: env.STAFF_PASSWORD })
+      expect(response.status).toBe(200)
+      expect(response.body.data.role).toBe('staff')
+    })
   })
 
   describe('GET /api/v1/auth/me', () => {
@@ -361,9 +370,10 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
         .send(registration)
       const pair = cookiePair(registered)
       const [name, value = ''] = pair.split('=')
-      const tampered = `${name}=${value.slice(0, -1)}${
-        value.endsWith('a') ? 'b' : 'a'
-      }`
+      const [header, payload, signature = ''] = value.split('.')
+      // Change a significant signature character, not unused base64url pad bits.
+      const changedSignature = `${signature.startsWith('A') ? 'B' : 'A'}${signature.slice(1)}`
+      const tampered = `${name}=${header}.${payload}.${changedSignature}`
 
       const response = await request(app)
         .get('/api/v1/auth/me')

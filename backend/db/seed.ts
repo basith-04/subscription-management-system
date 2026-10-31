@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Pool } from 'pg'
+import { z } from 'zod'
 import { createPool, withTransaction } from '../src/lib/db.js'
 import { hashPassword, passwordSchema } from '../src/lib/password.js'
 import { normalizeEmail } from '../src/lib/text.js'
@@ -32,33 +33,43 @@ export async function runReferenceSeeds(
  * D-08: the first Admin comes from environment variables, never the repo.
  * The seed is idempotent and does nothing when the variables are absent.
  */
-export async function seedAdmin(
+async function seedAccount(
   pool: Pool,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
+  roleName: 'admin' | 'staff',
 ): Promise<boolean> {
-  const email = env.ADMIN_EMAIL
-  const password = env.ADMIN_PASSWORD
-  if (!email || !password) return false
+  const prefix = roleName.toUpperCase()
+  const email = env[`${prefix}_EMAIL`]
+  const password = env[`${prefix}_PASSWORD`]
+  if (!email && !password) return false
+  if (!email || !password) throw new Error(`${prefix}_EMAIL and ${prefix}_PASSWORD must both be set`)
+
+  const normalizedEmail = normalizeEmail(email)
+  if (!z.string().max(254).email().safeParse(normalizedEmail).success) {
+    throw new Error(`${prefix}_EMAIL must be a valid email address`)
+  }
 
   const parsedPassword = passwordSchema.safeParse(password)
   if (!parsedPassword.success) {
     throw new Error(
-      `ADMIN_PASSWORD does not meet the password policy: ${parsedPassword.error.issues
+      `${prefix}_PASSWORD does not meet the password policy: ${parsedPassword.error.issues
         .map((issue) => issue.message)
         .join('; ')}`,
     )
   }
 
-  const normalizedEmail = normalizeEmail(email)
-  const fullName = env.ADMIN_FULL_NAME?.trim() || 'Administrator'
+  if (password.toLowerCase() === normalizedEmail) throw new Error(`${prefix}_PASSWORD must not equal the email address`)
+  const fullName = env[`${prefix}_FULL_NAME`]?.trim() || (roleName === 'admin' ? 'Administrator' : 'Staff')
+  if (fullName.length > 120) throw new Error(`${prefix}_FULL_NAME must be at most 120 characters`)
   const passwordHash = await hashPassword(password)
 
   const role = await pool.query<{ id: number }>(
-    "SELECT id FROM roles WHERE name = 'admin'",
+    'SELECT id FROM roles WHERE name = $1',
+    [roleName],
   )
   const roleRow = role.rows[0]
   if (!roleRow) {
-    throw new Error('admin role is missing; run the reference seeds first')
+    throw new Error(`${roleName} role is missing; run the reference seeds first`)
   }
 
   const result = await pool.query(
@@ -71,6 +82,15 @@ export async function seedAdmin(
   return result.rowCount === 1
 }
 
+export function seedAdmin(pool: Pool, env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
+  return seedAccount(pool, env, 'admin')
+}
+
+/** Optional first staff account; credentials are supplied by the environment. */
+export function seedStaff(pool: Pool, env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
+  return seedAccount(pool, env, 'staff')
+}
+
 async function main(): Promise<void> {
   await import('dotenv/config')
   const config = loadConfig()
@@ -79,6 +99,7 @@ async function main(): Promise<void> {
   try {
     const seeds = await runReferenceSeeds(pool)
     const adminCreated = await seedAdmin(pool, process.env)
+    const staffCreated = await seedStaff(pool, process.env)
 
     console.log(`reference seeds applied: ${seeds.join(', ')}`)
     console.log(
@@ -86,6 +107,7 @@ async function main(): Promise<void> {
         ? 'initial admin account created'
         : 'initial admin account not created (already exists or variables unset)',
     )
+    console.log(staffCreated ? 'initial staff account created' : 'initial staff account not created (already exists or variables unset)')
   } finally {
     await pool.end()
   }
