@@ -247,6 +247,17 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
       expect(response.body.error.code).toBe('FORBIDDEN')
       expect(await countRows(pool, 'users')).toBe(0)
     })
+
+    it('permits the configured browser origin with credentialed CORS', async () => {
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .set('Origin', 'http://localhost:5173')
+        .send(registration)
+      expect(response.status).toBe(201)
+      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173')
+      expect(response.headers['access-control-allow-credentials']).toBe('true')
+      expect(setCookieHeader(response)).toContain('HttpOnly')
+    })
   })
 
   describe('POST /api/v1/auth/login', () => {

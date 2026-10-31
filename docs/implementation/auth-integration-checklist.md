@@ -29,11 +29,11 @@ end-to-end acceptance. Email verification is deferred.
   redirection, route guards and internal-only return paths.
 - [x] Verify the seeded Admin and Staff on the intended development database.
 - [x] Verify the browser walkthrough below at 360, 768 and 1280 pixels on host.
-- [ ] Verify frontend/API cookie and CORS behavior through the intended Docker
-  topology, and check browser back-navigation after logout.
-- [ ] Resolve the additional outstanding security and environment findings
-  documented in the final report. Stateless JWT logout cannot revoke a copied
-  token under D-04 and requires a separately approved architectural decision.
+- [x] Verify browser back-navigation after logout and allowed/disallowed CORS
+  behavior on the host. Docker topology remains a deployment acceptance item.
+- [x] Warn about pre-existing customer email without linking the record (D-09).
+- [ ] Resolve the remaining deployment findings. Stateless JWT logout cannot
+  revoke a copied token under D-04 without an architectural decision.
 
 ### Manual F01 walkthrough (pending)
 
@@ -51,7 +51,7 @@ credentials, start the backend and frontend, then in a browser:
 6. Verify credentials, CORS, cookie flags and rate-limit feedback using the
    intended deployment origins. Never record secrets or cookies in reports.
 
-## F02 and deployment (not started: F01 gate pending)
+## F02 and deployment
 
 - [ ] Add the password-reset migration, token lifecycle, mailer, endpoints and
   UI; test concurrency, expiry, enumeration and mail failures.
