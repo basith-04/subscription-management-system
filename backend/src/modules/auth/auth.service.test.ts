@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import type { AuditEntry } from '../../src/lib/audit.js'
-import type { Queryable } from '../../src/lib/db.js'
-import { loadConfig } from '../../src/config.js'
+import { loadConfig } from '../../config.js'
+import type { AuditEntry } from '../../lib/audit.js'
+import type { Queryable } from '../../lib/db.js'
 import type {
   AuthRepository,
   InsertCustomerInput,
   InsertUserInput,
   RoleRecord,
   UserRecord,
-} from '../../src/modules/auth/auth.repository.js'
-import { createAuthService } from '../../src/modules/auth/auth.service.js'
+} from './auth.repository.js'
+import { createAuthService } from './auth.service.js'
 
 const TEST_SECRET = 'test-secret-that-is-at-least-32-characters-long'
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   loginSchema,
   registerSchema,
-} from '../../src/modules/auth/auth.schemas.js'
+} from './auth.schemas.js'
 
 const validRegistration = {
   full_name: '  Example Customer  ',

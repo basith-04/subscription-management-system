@@ -4,7 +4,7 @@ import {
   passwordSchema,
   verifyDummyPassword,
   verifyPassword,
-} from '../../src/lib/password.js'
+} from './password.js'
 
 describe('password policy', () => {
   it('accepts a password with more than 8 characters and every character class', () => {
