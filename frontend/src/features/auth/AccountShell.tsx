@@ -30,7 +30,10 @@ export function AccountShell({ area }: { area: 'portal' | 'app' }) {
       <h1>{area === 'portal' ? 'Customer portal' : 'Back office'}</h1>
       <p>Welcome, {user?.full_name}.</p>
       <p>Signed in as {user?.role}.</p>
-      {area === 'app' && <nav aria-label="Back office"><Link to="/app/products">Products</Link></nav>}
+      {area === 'app' && <nav aria-label="Back office">
+        <Link to="/app/products">Products</Link>
+        {user?.role === 'admin' && <Link to="/app/users">Staff</Link>}
+      </nav>}
       {warnings?.map((warning) => <p key={`${warning.field}:${warning.message}`} role="status">{warning.message}</p>)}
       {error && <p role="alert">{error}</p>}
       <button className="auth-submit" disabled={pending} onClick={() => void logout()}>{pending ? 'Signing out…' : 'Sign out'}</button>

@@ -10,6 +10,7 @@ import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth, RequireRole } from './features/auth/guards'
 import { AccountShell } from './features/auth/AccountShell'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
+import { StaffListPage } from './features/users'
 
 const queryClient = new QueryClient()
 
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="products" element={<ProductListRoute />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />
+              <Route path="users" element={<StaffListPage />} />
             </Route>
             <Route path="products/:id" element={<ProductDetailRoute />} />
           </Route>
