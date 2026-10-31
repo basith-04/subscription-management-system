@@ -116,6 +116,7 @@ curl http://localhost:4000/api/v1/health
 | Variable | Default | Purpose |
 |---|---|---|
 | `APP_ENV` | `development` | Runtime environment (`development`, `test`, `production`) |
+| `APP_TIMEZONE` | `Asia/Kolkata` | Business-day timezone for date-dependent rules |
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `4000` | HTTP port |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated CORS origins; `*` is rejected |

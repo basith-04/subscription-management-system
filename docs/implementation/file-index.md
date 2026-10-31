@@ -1,7 +1,7 @@
 # File Index
 
 > One row per file: its purpose, its owning feature, and its current status.
-> **Status:** The scaffold and F01 backend are partially implemented. Entries marked **EXISTING** have working code; **SCAFFOLDED** entries are placeholders unless otherwise noted.
+> **Status:** F00, F01, F03, F04, F05, F06, F07, F11, and F12 are implemented. Entries marked **EXISTING** have working code; **SCAFFOLDED** entries are placeholders unless otherwise noted.
 > **Companion docs (do not duplicate here):** [Directory Guidelines](../development/directory-guidelines.md) (rules: where code lives, naming, imports, shared files) · [Feature Breakdown](feature-breakdown.md) (ownership model, waves, Definition of Done) · [System Architecture](../architecture/system-architecture.md) (why the pieces fit) · [API Specification](../api/api-specification.md) (the contract each endpoint must match) · [Database Design](../database/database-design.md) (the schema each migration must copy).
 > **This file is additive.** It does not change any of the above.
 
@@ -30,6 +30,10 @@ Three purposes:
 ---
 
 ## 1. Backend — `backend/`
+
+| Documentation file | Status | Purpose |
+|---|---|---|
+| `docs/implementation/f09-checklist.md` | EXISTING | F09 prerequisite assessment, blocked items and implementation checklist. |
 
 | Documentation file | Status | Purpose |
 |---|---|---|
@@ -81,9 +85,10 @@ reset screens remain pending F02.
 | File | Status | Owner | Purpose | Consumed by |
 |---|---|---|---|---|
 | `db.ts` | EXISTING | F00 | Database client, transaction helpers and Postgres error mapping. | Every repository. |
-| `money.ts` | SCAFFOLDED | F00 | Decimal-safe money: string arithmetic, `ROUND_HALF_UP` to 2 dp. | Products (F06), plans (F07), billing (F12), payments (F13). |
-| `dates.ts` | SCAFFOLDED | F00 | "Today" in `APP_TIMEZONE`; `YYYY-MM-DD` parsing. | Everywhere dates matter; critical for F12. |
-| `pagination.ts` | SCAFFOLDED | F00 | Parse `page` / `page_size` (max 100), build `meta`; whitelisted sort parsing. | Every list endpoint. |
+| `money.ts` | EXISTING | F00 | Decimal-safe money: string arithmetic, `ROUND_HALF_UP` to 2 dp. | Products (F06), plans (F07), billing (F12), payments (F13). |
+| `dates.ts` | EXISTING | F00 | Validates ISO calendar dates and resolves an injected instant in `APP_TIMEZONE`. | F09 and later date-dependent features. |
+| `dates.test.ts` | EXISTING | F00 | Business-timezone and calendar-date regression tests. | Date helpers. |
+| `pagination.ts` | EXISTING | F00 | Parse `page` / `page_size` (max 100), build `meta`; whitelisted sort parsing. | Every list endpoint. |
 | `responses.ts` | EXISTING | F00 | `ok`, `created`, `list`, `noContent`. | Every controller. |
 | `errors.ts` | EXISTING | F00 | `ApiError` class (status, code, message, details). | Services, middleware. |
 | `error-codes.ts` | EXISTING | F00 | Central list of error codes. | Everywhere an error is thrown. |
@@ -91,8 +96,11 @@ reset screens remain pending F02.
 | `mailer.test.ts` | EXISTING | F00 | SMTP success, failure and configuration regression tests. | Mail infrastructure. |
 | `audit.ts` | EXISTING | F00 | Transactional insert-only audit row writer. | Every state-changing service. |
 | `session.test.ts` | EXISTING | F01 | JWT signature, expiry-claim and algorithm regression tests. | Authentication. |
-| `scheduler.ts` | SCAFFOLDED | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |
-| `state-machine.ts` | SCAFFOLDED | F00 | `transition(entity, from[], to, opts)` — conditional `UPDATE … WHERE status = expected`; `409 INVALID_STATE_TRANSITION` on 0 rows. | `subscriptions.state-machine.ts`, `invoices.state-machine.ts`. |
+| `scheduler.ts` | EXISTING | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |
+| `state-machine.ts` | EXISTING | F00 | Transaction-client subscription transition with locking, conditional update and audit. | F09 service must wire it; other entities/fields remain future work. |
+| `state-machine.test.ts` | EXISTING | F00 | Conditional transition and audit failure regression tests. | Shared state-machine helper. |
+| `tests/integration/db/state-machine.test.ts` | EXISTING | F00 / F09 | Test-only PostgreSQL transition and audit rollback checks. | Uses temporary tables, not the F09 production schema. |
+| `tests/integration/db/state-machine.concurrent.test.ts` | EXISTING | F00 / F09 | Test-only concurrent conditional transition checks. | Uses an isolated test schema, not the F09 production schema. |
 | `logger.ts` | SCAFFOLDED | F00 | Request-scoped structured logger. **Never log secrets, passwords, or PII.** | Every layer; don't `console.log`. |
 | `constants.ts` | SCAFFOLDED | F00 | Cross-module constants (role names, status enums). Mirror of `frontend/src/lib/constants.ts`. | Middleware, services. |
 
@@ -100,7 +108,7 @@ reset screens remain pending F02.
 
 | File | Status | Owner | Purpose |
 |---|---|---|---|
-| `index.ts` | SCAFFOLDED | F00 | The **one** place that imports every `*.jobs.ts` and calls `registerJob`. Features add new jobs by exporting them from their own `*.jobs.ts` — this file should not need edits after the first wire-up. |
+| `index.ts` | EXISTING | F00 | The **one** place that imports every `*.jobs.ts` and calls `registerJob`. Features add new jobs by exporting them from their own `*.jobs.ts` — this file should not need edits after the first wire-up. |
 
 ### 1.5 Billing engine — `backend/src/billing/` (no HTTP)
 
@@ -108,13 +116,14 @@ This folder is the engine, not the API. The API lives in `modules/billing-runs/`
 
 | File | Status | Owner | Purpose |
 |---|---|---|---|
-| `calculators/pricing.ts` | SCAFFOLDED | F09 | Pure functions: `computeLine`, `computeTotals` (quantity × unit_price, tax per line). |
-| `calculators/periods.ts` | SCAFFOLDED | F12 | Pure period-date math: `periodStart`/`periodEnd`; month-end clamping; leap years. |
+| `calculators/pricing.ts` | EXISTING | F09 | Pure `resolveUnitPrice`, `computeLine`, `computeTotals`; decimal-safe pre-discount pricing. |
+| `calculators/pricing.test.ts` | EXISTING | F09 | Price precedence, tax rounding, precision and input-boundary tests. |
+| `calculators/periods.ts` | EXISTING | F12 | Pure period-date math: `periodStart`/`periodEnd`; month-end clamping; leap years. |
 | `calculators/tax.ts` | SCAFFOLDED | F09 | Pure per-line tax computation; aggregates `invoice_tax_details` from rounded lines. |
 | `calculators/discounts.ts` | SCAFFOLDED | F15 | Pure discount eligibility and allocation: `selectEligibleDiscount`, `allocateToLines`. |
-| `invoice-builder.ts` | SCAFFOLDED | F12 | Assembles a draft invoice from subscription data — snapshots, tax summary, discount application. |
-| `run-billing.ts` | SCAFFOLDED | F12 | Orchestrates a billing run: `FOR UPDATE SKIP LOCKED`, one transaction per subscription, cursor advance, catch-up loop. |
-| `billing.jobs.ts` | SCAFFOLDED | F12 | The scheduled entry point: `runBilling({ asOf })` — plain function, idempotent. |
+| `invoice-builder.ts` | EXISTING | F12 | Assembles a draft invoice from subscription data — snapshots, tax summary, discount application. |
+| `run-billing.ts` | EXISTING | F12 | Orchestrates a billing run: `FOR UPDATE SKIP LOCKED`, one transaction per subscription, cursor advance, catch-up loop. |
+| `billing.jobs.ts` | EXISTING | F12 | The scheduled entry point: `runBilling({ asOf })` — plain function, idempotent. |
 
 ### 1.6 Business modules — `backend/src/modules/`
 
@@ -137,17 +146,22 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | Module | API prefix | Owner | Tables (owned) | Notable extra files / notes |
 |---|---|---|---|---|
 | `auth` | `/auth` | F01 (register/login/me/logout) + F02 (forgot/reset/change) | `password_reset_tokens` (F02) | F01 backend implemented; F02 remains pending. |
+| `subscriptions.state-machine.ts` | — | F09 / F10 | — | F09 pure transition rules exist; transactional service wiring remains pending. |
+| `subscriptions.state-machine.test.ts` | — | F09 | — | Unit tests cover every F09 action/state pair and invalid states. |
+| `subscriptions.schemas.test.ts` | — | F09 | — | Request-shape, input-whitelist, date and filter regression tests. |
+| `subscriptions.validation.ts` | — | F09 | — | Pure F07 availability and per-line plan-minimum guard; transaction wiring is pending. |
+| `subscriptions.validation.test.ts` | — | F09 | — | Availability and minimum-quantity guard regression tests. |
 | `users` | `/users` | F03 | `users`, `roles` | ✅ **IMPLEMENTED.** Includes last-admin guard and self-deactivation prevention. |
-| `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | Exports `CustomerSelect` on the frontend side. |
+| `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | ✅ **IMPLEMENTED.** Exports `CustomerSelect` on the frontend side. |
 | `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | ✅ **IMPLEMENTED.** Exports `computeEffectivePrice` from `index.ts`. |
-| `plans` | `/plans` | F07 | `plans`, `plan_products` | Exports `assertPlanAvailable` from `index.ts` — F09 uses it. |
+| `plans` | `/plans` | F07 | `plans`, `plan_products` | ✅ **IMPLEMENTED.** Exports `assertPlanAvailable` from `index.ts` — F09 uses it. |
 | `quotation-templates` | `/quotation-templates` | F08 | `quotation_templates`, `quotation_template_items` | Exports `getTemplateForUse` — F09 uses it. |
 | `subscriptions` | `/subscriptions`, `/quotations` | F09 (create/confirm/cancel) + F10 (activate/pause/renew/close) | `subscriptions`, `subscription_items` (sequence `subscription_number_seq`) | **Two routers** — `subscriptions.routes.ts` and `quotations.routes.ts` — because a quotation **is** a subscription in `draft`/`quotation` status. Adds `subscriptions.state-machine.ts`. F10 also adds `subscriptions.jobs.ts` (activation, quote expiry, expiry/renewal jobs). |
-| `taxes` | `/taxes` | F05 | `tax_rules` | Simplest CRUD — a good pattern reference for F06/F07. |
-| `payment-terms` | `/payment-terms` | F05 | `payment_terms` | Implements the F00 reference slice in full. |
+| `taxes` | `/taxes` | F05 | `tax_rules` | ✅ **IMPLEMENTED.** Simplest CRUD — a good pattern reference for F06/F07. |
+| `payment-terms` | `/payment-terms` | F05 | `payment_terms` | ✅ **IMPLEMENTED.** Implements the F00 reference slice in full. |
 | `discounts` | `/discounts`, `/subscriptions/:id/discounts` | F15 | `discounts`, `discount_products`, `subscription_discounts`, `discount_redemptions` | Grant/revoke routes declared here even though the URL is `/subscriptions/…` (per [Directory Guidelines §K](../development/directory-guidelines.md)). |
-| `invoices` | `/invoices`, `/subscriptions/:id/invoices` | F11 | `invoices`, `invoice_items`, `invoice_tax_details`, `billing_runs` (sequence `invoice_number_seq`) | Owns the `payment_state` derivation — one function, exported from `index.ts`. Adds `invoices.state-machine.ts`. F11 also adds `invoices.jobs.ts` for the "send unsent invoice" retry. |
-| `billing-runs` | `/billing/*` | F12 | (uses `billing_runs` via `invoices`) | **API only.** Wraps `billing/run-billing.ts`. Admin "Run now" lives here. |
+| `invoices` | `/invoices`, `/subscriptions/:id/invoices` | F11 | `invoices`, `invoice_items`, `invoice_tax_details`, `billing_runs` (sequence `invoice_number_seq`) | ✅ **IMPLEMENTED.** Owns the `payment_state` derivation — one function, exported from `index.ts`. Adds `invoices.state-machine.ts`. F11 also adds `invoices.jobs.ts` for the "send unsent invoice" retry. |
+| `billing-runs` | `/billing/*` | F12 | (uses `billing_runs` via `invoices`) | ✅ **IMPLEMENTED.** **API only.** Wraps `billing/run-billing.ts`. Admin "Run now" lives here. |
 | `payments` | `/payments`, `/invoices/:id/payments` | F13 | `payments`, `payment_allocations` | Calls the invoice state machine's `paid`/`confirmed` entry points. Never writes invoice status directly. |
 | `portal` | `/me/subscriptions`, `/me/invoices` | F14 | – | Composes `subscriptions`, `invoices`, `payments` with customer scoping. **No business rules of its own.** Uses the F00 `scopeToCustomer` helper on every query. |
 | `reports` | `/dashboard`, `/reports` | F16 | – | Read-only aggregate SQL across tables. The only module allowed to bypass "reads via another module's service". |
@@ -174,6 +188,10 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | `schema.prisma` | SCAFFOLDED | F00 | Prisma schema — **only** if D-03 selects Prisma. | If D-03 lands on raw SQL, delete the file. Column-by-column must match [DB Design §4](../database/database-design.md). |
 | `migrations/` | EXISTING | each feature | Timestamp-named SQL migrations; F00 baseline exists. | Never edit a merged migration; fix forward. |
 | `migrations/20261031010000_f02_password_reset_tokens.sql` | EXISTING | F02 | Adds hashed single-use password reset tokens. | Forward-only. |
+| `migrations/20261115000000_f06_products_and_variants.sql` | EXISTING | F06 | Adds products and product_variants. | |
+| `migrations/20261108090000_f07_plans_and_policies.sql` | EXISTING | F07 | Adds plans and plan_products. | |
+| `migrations/20261201000000_f11_invoices.sql` | EXISTING | F11 | Adds invoices, invoice_items, invoice_tax_details, billing_runs, invoice_number_seq. | |
+| `migrations/20261231000000_f11_invoice_subscription_fks.sql` | EXISTING | F11 | Attaches FKs to F09 subscriptions when they exist. | |
 | `seeds/reference/index.ts` | SCAFFOLDED | F00 | Idempotent seed: roles, first admin (from env per D-08), payment terms, sample taxes. | Safe to run in any environment. |
 | `seeds/demo/index.ts` | SCAFFOLDED | F00 | Demo story data for walkthroughs. | Never in production. |
 | `seeds/bulk/index.ts` | SCAFFOLDED | F00 | Bulk performance data (~5,000 subs / ~60,000 invoices) for the <2s criterion. | Used by S2 (Performance). |
@@ -183,9 +201,10 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | Path | Status | Owner | Purpose |
 |---|---|---|---|
 | `health.test.ts` | **EXISTING** | F00 | Smoke test that `createApp()` responds to health checks. |
+| `auth-forgery.test.ts` | EXISTING | F00 / F09 | Reject forged role and bearer credentials on protected integrated routes. |
 | `setup.ts` | SCAFFOLDED | F00 | Apply migrations, truncate between test files, close the pool at the end. |
 | `helpers/login-as.ts` | SCAFFOLDED | F00 | `loginAs(role)` — returns a supertest agent with a session cookie for a test user. |
-| `helpers/clock.ts` | SCAFFOLDED | F00 | Injectable clock — needed by F10/F12 tests. |
+| `helpers/clock.ts` | EXISTING | F00 | Injectable clock — needed by F10/F12 tests. |
 | `factories/index.ts` | SCAFFOLDED | F00 | Base factory helpers (`createCustomer()`, `createActiveSubscription()`, …). Each table owner adds their own. |
 | `integration/<module>/*.test.ts` | NOT SCAFFOLDED | feature owner | Per-endpoint integration tests (role matrix, validation, state errors). One file per feature per directory-guidelines §J. |
 
@@ -229,7 +248,7 @@ Per-module API clients. Each imports `apiRequest` (and `ApiError`) from `../lib/
 | `payment-terms.ts` | SCAFFOLDED | F05 | Payment terms CRUD. |
 | `discounts.ts` | SCAFFOLDED | F15 | Discount CRUD + grant/revoke. |
 | `invoices.ts` | SCAFFOLDED | F11 | Invoice CRUD + confirm/cancel/send/print. |
-| `billing-runs.ts` | SCAFFOLDED | F12 | `POST /billing/runs`, list, detail, upcoming. |
+| `billing-runs.ts` | EXISTING | F12 | `POST /billing/runs`, list, detail, upcoming. |
 | `payments.ts` | SCAFFOLDED | F13 | Payment record/void/list. |
 | `portal.ts` | SCAFFOLDED | F14 | `/me/subscriptions`, `/me/invoices` (+ print). |
 | `reports.ts` | SCAFFOLDED | F16 | `/dashboard/summary` and every `/reports/*`. |
@@ -257,14 +276,14 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `users` | F03 | `pages/StaffListPage.tsx`; `components/StaffFormModal.tsx`; `hooks/useStaff.ts`. | – |
 | `customers` | F04 | `pages/CustomerListPage.tsx`, `pages/CustomerFormPage.tsx`, `pages/CustomerDetailPage.tsx`; `components/CustomerSelect.tsx` (shared), `components/CustomerForm.tsx`, `components/CustomerProfileCard.tsx`, `components/CustomerDetailSections.tsx` (named slots for F09 subscriptions, F13 invoices and outstanding amounts); `hooks/useCustomers.ts`, `hooks/useDebouncedValue.ts`; `customers.css`, `__tests__/`. The portal `ProfilePage` is `portal/pages/ProfilePage.tsx` (F04; F14 adds the rest of the portal). | `CustomerSelect`. |
 | `products` | F06 | ✅ **IMPLEMENTED.** `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`, `pages/ProductFormPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`. | `ProductSelect`, `VariantSelect`. |
-| `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
+| `plans` | F07 | ✅ **IMPLEMENTED.** `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
 | `quotation-templates` | F08 | `pages/TemplateListPage.tsx`, `pages/TemplateFormPage.tsx`; `components/LineItemsEditor.tsx` (shared), `components/TemplateSelect.tsx`; `hooks/useTemplates.ts`. | `LineItemsEditor`, `TemplateSelect`. |
 | `subscriptions` | F09, F10 | `pages/QuotationListPage.tsx`, `pages/SubscriptionListPage.tsx`, `pages/SubscriptionDetailPage.tsx`; `components/StatusTimeline.tsx`, `components/SubscriptionStatusBadge.tsx`, `components/SubscriptionActions.tsx`; `hooks/useSubscriptions.ts`, `hooks/useQuotations.ts`. | `SubscriptionStatusBadge`. |
-| `taxes` | F05 | `pages/TaxListPage.tsx`; `components/TaxSelect.tsx`; `hooks/useTaxes.ts`. | `TaxSelect`. |
-| `payment-terms` | F05 | `pages/PaymentTermListPage.tsx`; `components/PaymentTermSelect.tsx`; `hooks/usePaymentTerms.ts`. | `PaymentTermSelect`. |
+| `taxes` | F05 | ✅ **IMPLEMENTED.** `pages/TaxListPage.tsx`; `components/TaxSelect.tsx`; `hooks/useTaxes.ts`. | `TaxSelect`. |
+| `payment-terms` | F05 | ✅ **IMPLEMENTED.** `pages/PaymentTermListPage.tsx`; `components/PaymentTermSelect.tsx`; `hooks/usePaymentTerms.ts`. | `PaymentTermSelect`. |
 | `discounts` | F15 | `pages/DiscountListPage.tsx`, `pages/DiscountDetailPage.tsx`; `components/DiscountsPanel.tsx`; `hooks/useDiscounts.ts`. | – |
-| `invoices` | F11 | `pages/InvoiceListPage.tsx`, `pages/InvoiceDetailPage.tsx`, `pages/InvoicePrintPage.tsx`; `components/PaymentStateBadge.tsx`, `components/InvoiceDocument.tsx`; `hooks/useInvoices.ts`. | `PaymentStateBadge`, `InvoiceDocument`. |
-| `billing-runs` | F12 | `pages/BillingPage.tsx`, `pages/BillingRunDetailPage.tsx`; `components/RunBillingButton.tsx`; `hooks/useBillingRuns.ts`. | – |
+| `invoices` | F11 | ✅ **IMPLEMENTED.** `pages/InvoiceListPage.tsx`, `pages/InvoiceDetailPage.tsx`, `pages/InvoicePrintPage.tsx`; `components/PaymentStateBadge.tsx`, `components/InvoiceDocument.tsx`; `hooks/useInvoices.ts`. | `PaymentStateBadge`, `InvoiceDocument`. |
+| `billing-runs` | F12 | ✅ **IMPLEMENTED.** `pages/BillingPage.tsx`, `pages/BillingRunDetailPage.tsx`; `components/RunBillingButton.tsx`; `hooks/useBillingRuns.ts`. | – |
 | `payments` | F13 | `pages/PaymentListPage.tsx`; `components/RecordPaymentDialog.tsx`, `components/AllocationEditor.tsx`; `hooks/usePayments.ts`. | – |
 | `portal` | F14 | `pages/PortalHomePage.tsx`, `pages/MySubscriptionsPage.tsx`, `pages/MyInvoicesPage.tsx`; `components/`; `hooks/useMySubscriptions.ts`, `hooks/useMyInvoices.ts`. | – |
 | `reports` | F16 | `pages/DashboardPage.tsx`; `components/KpiCard.tsx`, `components/DateRangePicker.tsx`; `hooks/useDashboard.ts`. | – |
@@ -403,7 +422,7 @@ The index respects these from the [Directory Guidelines](../development/director
 
 ## 5. Progress tracking
 
-The scaffold marks every placeholder with the literal token `PLACEHOLDER`. The count is your progress metric. **F03 and F06 are merged; their files no longer contain `PLACEHOLDER`.**
+The scaffold marks every placeholder with the literal token `PLACEHOLDER`. The count is your progress metric. **F03, F06, F11, and F12 are merged; their files no longer contain `PLACEHOLDER`.**
 
 ```bash
 # Files still stubbed:
@@ -416,3 +435,4 @@ grep -rl PLACEHOLDER backend/src/modules     | wc -l
 grep -rl PLACEHOLDER frontend/src            | wc -l
 grep -rl PLACEHOLDER frontend/src/features   | wc -l
 grep -rl PLACEHOLDER frontend/src/components | wc -l
+```

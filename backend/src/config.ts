@@ -31,6 +31,7 @@ export interface Config {
   jwtSecret: string
   cookie: CookieConfig
   authRateLimit: RateLimitConfig
+  appTimezone: string
   mail: MailConfig
 }
 
@@ -82,6 +83,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const port = parseInteger('PORT', env.PORT, 4000, 1, 65535)
   const runtimeEnv = env.APP_ENV ?? env.NODE_ENV ?? 'development'
   const isProduction = runtimeEnv === 'production'
+  const appTimezone = env.APP_TIMEZONE ?? 'Asia/Kolkata'
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone: appTimezone })
+  } catch {
+    throw new Error('APP_TIMEZONE must be a valid IANA timezone')
+  }
 
   const allowedOrigins = (env.ALLOWED_ORIGINS ?? DEFAULT_ALLOWED_ORIGIN)
     .split(',')
@@ -146,6 +153,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
     env: runtimeEnv,
     isProduction,
+    appTimezone,
     host: env.HOST ?? '0.0.0.0',
     port,
     allowedOrigins:

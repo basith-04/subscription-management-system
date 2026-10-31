@@ -1,0 +1,84 @@
+# F09 implementation checklist
+
+Status: **blocked on prerequisites**. This is not a completed feature.
+
+## Prerequisite assessment
+
+- [x] Inspect `origin/main`, F04–F08, F09's A–I requirements, API, schema,
+  state-machine, billing and ownership conventions.
+- [x] Identify the existing F06 `computeEffectivePrice`, F07
+  `assertPlanAvailable`, shared money helper, auth middleware and audit writer.
+- [x] F04: merge the customer implementation and `CustomerSelect` from main.
+- [ ] F05: [PR #12](https://github.com/basith-04/subscription-management-system/pull/12)
+  is merged, including migrations and selectors, but F05's API repositories use
+  an in-memory database rather than PostgreSQL. On an isolated F00/F05 database,
+  the migrations and seeds applied, but a tax created through the F05 API had no
+  matching database row. F09 cannot safely reference F05 records until the
+  implementation is integrated with PostgreSQL and its tests use real sessions.
+- [x] Remove the F05 merge's untrusted role-header and hardcoded bearer-token
+  authentication bypass; verify protected routes reject forged credentials.
+- [ ] Replace F05's parallel frontend demo auth context with the existing
+  database-backed session state and verify its real Admin/Staff role behavior.
+- [ ] F08: integrate quotation template migrations, `getTemplateForUse`,
+  `TemplateSelect` and `LineItemsEditor`. Main currently has placeholders and
+  no F08 migration or editor.
+- [x] Implement the missing shared subscription transition helper in its
+  existing F00 location, using a caller-owned transaction, row lock, conditional
+  update and audit. PostgreSQL test-only tables verify commit, audit rollback
+  and concurrent conditional transitions; actual F09 schema verification remains.
+- [ ] Wire the F09 rule table and helper into transactional services after the
+  F09 schema and prerequisite modules land.
+- [ ] Repair remaining main baseline defects before end-to-end work: frontend
+  `StaffListPage` fails typecheck; F06 product tests use obsolete demo identity
+  headers; the two identity baselines both create `roles`/`users`, and the F07
+  migration sorts before its F06 prerequisites. Reconcile those through the
+  owning features without editing merged migrations or inventing tables.
+
+## Independent F09 work
+
+- [x] Implement and unit-test the pure, pre-discount pricing calculator using
+  F06's existing effective-price helper and integer minor units.
+- [x] Verify 100 tax-rounding cases against PostgreSQL `numeric`; verify the
+  `33.33 × 5% = 1.67` case and override precedence with focused unit tests.
+- [x] Implement and test the pure F09 issue/confirm/cancel state-rule table and
+  inclusive quotation-validity guard with injected business dates; ownership,
+  timezone selection, locking and auditing remain service responsibilities.
+- [x] Add strict request-shape schemas and unit tests. The schemas are not yet
+  mounted; active-record checks, plan policy, ownership and transactional
+  validation remain blocked on the missing services and migrations. If both a
+  template and a plan are supplied, the service must reject a plan that does not
+  match the selected template; request-shape validation cannot check the database.
+- [x] Add a pure F09 plan/minimum-quantity guard that reuses F07's public
+  `assertPlanAvailable`; services must reload the plan and call it transactionally.
+- [x] Implement the shared business-date primitive and D-18 backdate guard with
+  injected time; `APP_TIMEZONE` defaults to `Asia/Kolkata` and is validated.
+  Service wiring and timezone-aware request tests remain pending.
+- [ ] Wire pricing into creation, editing and detail responses when F09's
+  transaction boundaries and F05/F08 contracts are available.
+
+## Remaining F09 work
+
+- [ ] Add the documented `subscriptions`/`subscription_items` migration and
+  `subscription_number_seq` after prerequisite migrations are integrated.
+- [ ] Implement repositories, services, state machine, validation, RBAC,
+  transactional audit history and the quotation/subscription API.
+- [ ] Integrate all five staff pages, template prefill, shared line editor,
+  list filters, loading/error/success states and history timeline.
+- [ ] Verify concurrency, rollback, ownership, price snapshots, downstream
+  F10/F11/F12/F14/F15 contracts and the full browser walkthrough.
+- [ ] Run complete regression, lint, typecheck and build suites after the
+  baseline failures and required features are resolved.
+
+## Preflight evidence
+
+At `origin/main` commit `6feb0ec`, backend typecheck, lint and build passed (lint
+has an existing unused-import warning). The full backend suite against an
+isolated PostgreSQL 16 database reports 186 passing tests and three failing F06
+product tests because those tests send demo headers rather than session cookies.
+Frontend tests pass (42), while its build fails because `StaffListPage.tsx` has
+an unused `navigate` parameter. The unscoped migration runner previously failed
+on an empty PostgreSQL 16 database because both baseline migrations create
+`roles`; neither migration changed in the F04 merge. These failures predate F09.
+The F05 merge (`20bbdd2`) reintroduced an invalid `plansRouter` reference; F09
+corrects the route registry locally. F05's tests still rely on spoofed role
+headers and must be migrated to genuine sessions as part of F05 integration.

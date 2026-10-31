@@ -53,6 +53,7 @@ services:
       APP_ENV: ${APP_ENV:-development}
       HOST: 0.0.0.0
       PORT: 4000
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Kolkata}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
       DATABASE_URL: postgres://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-brightloop}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
