@@ -1,11 +1,60 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHealth, type Health } from './lib/api'
+import { ProductListPage, ProductDetailPage, ProductFormPage } from './features/products'
+import { StaffListPage } from './features/users'
 import './App.css'
 
 type ApiState = { status: 'checking' } | { status: 'online'; health: Health } | { status: 'offline'; message: string }
 
+function usePath(): string {
+  const [path, setPath] = useState(() => window.location.pathname)
+  useEffect(() => {
+    const onChange = () => setPath(window.location.pathname)
+    window.addEventListener('popstate', onChange)
+    return () => window.removeEventListener('popstate', onChange)
+  }, [])
+  return path
+}
+
+export function navigate(to: string): void {
+  if (window.location.pathname === to) return
+  window.history.pushState(null, '', to)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+
+function Sidebar({ navigate }: { navigate: (p: string) => void }) {
+  const role = import.meta.env.VITE_DEMO_USER_ROLE || 'admin' 
+  
+  return (
+    <nav style={{ width: 240, borderRight: '1px solid #e2ded4', padding: '1rem', background: '#f7f6f2', minHeight: '100vh' }}>
+      <div style={{ fontWeight: 700, marginBottom: '2rem', color: '#1f6f4a', fontSize: '1.2rem' }}>Brightloop</div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem' }}>
+        <li><a href="/app/products" onClick={e => { e.preventDefault(); navigate('/app/products') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Products</a></li>
+        {role === 'admin' && (
+          <li><a href="/app/users" onClick={e => { e.preventDefault(); navigate('/app/users') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Staff</a></li>
+        )}
+      </ul>
+    </nav>
+  )
+}
+
+const renderWithLayout = (Page: React.ReactNode) => (
+  <div style={{ display: 'flex' }}>
+    <Sidebar navigate={navigate} />
+    <div style={{ flex: 1 }}>{Page}</div>
+  </div>
+)
+
 export default function App() {
+  const path = usePath()
+  if (path === '/app/products') return renderWithLayout(<ProductListPage navigate={navigate} />)
+  if (path === '/app/products/new') return renderWithLayout(<ProductFormPage navigate={navigate} />)
+  const m = path.match(/^\/app\/products\/(\d+)$/)
+  if (m) return renderWithLayout(<ProductDetailPage id={Number(m[1])} navigate={navigate} />)
+  if (path === '/app/users') return renderWithLayout(<StaffListPage navigate={navigate} />)
+
   return <LandingPage />
 }
 
