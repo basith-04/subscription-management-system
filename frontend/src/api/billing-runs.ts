@@ -1,51 +1,9 @@
 import { apiRequest } from '../lib/api'
 
-export interface BillingRun {
-  id: number
-  trigger: string
-  run_date: string
-  started_at: string
-  finished_at: string | null
-  status: 'running' | 'completed' | 'completed_with_errors' | 'failed'
-  subscriptions_scanned: number
-  invoices_created: number
-  invoices_skipped: number
-  errors_count: number
-}
+export interface BillingRun { id: string; run_date: string; status: 'running' | 'completed' | 'failed'; subscriptions_scanned: number; invoices_created: number; invoices_skipped: number; errors_count: number }
+export interface UpcomingBilling { id: string; number: string; customer_id: string; next_billing_date: string }
+export interface BillingRunList { data: BillingRun[]; meta: { page: number; total_pages: number } }
 
-export interface BillingRunDetail extends BillingRun {
-  errors: Array<{ id: number; number: string; error: string }>
-}
-
-export interface UpcomingSubscription {
-  id: number
-  number: string
-  next_billing_date: string
-  customer_id: number
-}
-
-export async function getRuns(page = 1, pageSize = 20) {
-  return apiRequest<{ data: BillingRun[]; meta: any }>(`/billing/runs?page=${page}&page_size=${pageSize}`)
-}
-
-export async function getRunDetail(id: number) {
-  return apiRequest<BillingRunDetail>(`/billing/runs/${id}`)
-}
-
-export async function triggerRun(asOf?: string) {
-  return apiRequest<{ run_id: number; status: string }>('/billing/runs', {
-    method: 'POST',
-    body: JSON.stringify({ as_of: asOf }),
-  })
-}
-
-export async function getUpcoming(days = 7) {
-  return apiRequest<UpcomingSubscription[]>(`/billing/upcoming?days=${days}`)
-}
-
-export async function createManualInvoice(subscriptionId: number, periodStart: string) {
-  return apiRequest<{ id: number }>('/invoices', {
-    method: 'POST',
-    body: JSON.stringify({ subscription_id: subscriptionId, period_start: periodStart }),
-  })
-}
+export function listBillingRuns(): Promise<BillingRunList> { return apiRequest<BillingRunList>('/billing/runs', { raw: true }) }
+export function getUpcomingBilling(days = 7): Promise<UpcomingBilling[]> { return apiRequest<UpcomingBilling[]>(`/billing/upcoming?days=${days}`) }
+export function startBillingRun(): Promise<{ run_id: number; status: string }> { return apiRequest('/billing/runs', { method: 'POST', body: '{}' }) }

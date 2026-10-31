@@ -1,11 +1,11 @@
 /* Customer portal — mobile-first (designed at 360px, enhanced upward). Colocated per frontend/AGENTS.md. */
-.portal-shell { min-height: 100vh; background: #f4f6f8; color: #172333; font-family: system-ui, sans-serif; }
-.portal-header { background: #fff; border-bottom: 1px solid #dce3ea; padding: .6rem .9rem; display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; }
+.portal-shell { color: #172333; } /* background, padding and font come from styles/global.css */
+.portal-header { flex-wrap: wrap; gap: .4rem .9rem; padding-bottom: 1.2rem; }
 .portal-brand { font-size: 1.1rem; } .portal-user { color: #556; font-size: .9rem; margin-left: auto; }
 .portal-nav { display: flex; flex-wrap: wrap; gap: .25rem; width: 100%; }
 .portal-nav a, .portal-nav button { padding: .6rem .8rem; min-height: 44px; border-radius: .4rem; border: 1px solid transparent; background: none; font: inherit; color: #154f85; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; }
 .portal-nav a.active { background: #e8f0f8; font-weight: 600; } .portal-nav button { border-color: #c8d2dc; margin-left: auto; }
-.portal-main { max-width: 64rem; margin: 0 auto; padding: 1rem .9rem 3rem; }
+.portal-content { max-width: 64rem; padding-bottom: 3rem; }
 .portal-stack { display: flex; flex-direction: column; gap: 1rem; } .portal-stack h1 { margin: .2rem 0; font-size: 1.4rem; overflow-wrap: anywhere; }
 .portal-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
 .portal-card { background: #fff; border: 1px solid #dce3ea; border-radius: .6rem; padding: .9rem; }
@@ -43,4 +43,4 @@
   .portal-table td::before { content: none; } .portal-table .num { text-align: right; }
 }
 @media (min-width: 1000px) { .portal-grid { grid-template-columns: repeat(3, 1fr); } }
-@media print { .portal-shell { background: #fff; } .portal-main { padding: 0; max-width: none; } .no-print { display: none !important; } }
+@media print { .portal-shell { background: #fff; padding: 0; } .portal-content { padding: 0; max-width: none; } .no-print { display: none !important; } }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { apiRequest } from '../lib/api'
 import { meKey, useAuth } from '../features/auth/useAuth'
 import '../features/portal/portal.css'
@@ -10,7 +10,7 @@ const LINKS = [
   { to: '/portal/invoices', label: 'Invoices' }, { to: '/portal/profile', label: 'Profile' }, { to: '/portal/change-password', label: 'Change password' },
 ]
 
-/** Customer-facing chrome, mobile-first: a wrapping nav that is usable at 360px. Hidden when printing. */
+/** Customer-facing chrome (brand and shell styles from styles/global.css), mobile-first. Hidden when printing. */
 export function PortalLayout() {
   const { user } = useAuth()
   const client = useQueryClient()
@@ -27,14 +27,17 @@ export function PortalLayout() {
   return (
     <div className="portal-shell">
       <header className="portal-header no-print">
-        <strong className="portal-brand">Brightloop</strong>
+        <Link to="/" className="workspace-brand"><span className="workspace-brand-mark">B</span>brightloop</Link>
         <span className="portal-user">{user?.full_name}</span>
         <nav aria-label="Portal" className="portal-nav">
           {LINKS.map((l) => <NavLink key={l.to} to={l.to} end={l.end}>{l.label}</NavLink>)}
           <button type="button" onClick={() => void logout()} disabled={pending}>{pending ? 'Signing out…' : 'Sign out'}</button>
         </nav>
       </header>
-      <main className="portal-main"><Outlet /></main>
+      <main className="portal-content">
+        <p className="portal-eyebrow no-print">Customer space</p>
+        <Outlet />
+      </main>
     </div>
   )
 }
