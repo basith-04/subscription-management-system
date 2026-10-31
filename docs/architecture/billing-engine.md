@@ -1,6 +1,6 @@
 # Business Logic and Billing Engine
 
-> **Status:** Design only. Nothing here is implemented. This is the most important logic in the product: **an invoice must never be created twice for the same period, and a period must never be skipped.**
+> **Status:** The pre-discount F09 pricing calculator is implemented; the billing engine remains a design. **An invoice must never be created twice for the same period, and a period must never be skipped.**
 > Related: [Database Design](../database/database-design.md) · [State Machines](state-machines.md) · [Data Flows](data-flows.md) · [Security](security-and-rbac.md)
 
 ## 1. Big picture
@@ -68,6 +68,18 @@ Renewal extends `expiry_date` by one term (same length as the existing term) wit
 2. **Variant price** — when a line is created: `unit_price = product.sales_price + variant.price_adjustment` (or the template/plan override). Example: base 1,000 + Odoo brand 560 = **1,560**. The result is stored on `subscription_items.unit_price`.
 3. **Invoice price** — invoices copy `subscription_items.unit_price`. They do **not** re-read the product, so a catalogue price change affects only new/edited lines. OPEN QUESTION: should price changes propagate to existing subscriptions? Assumed no (contract price).
 4. Effective price must be `≥ 0` (validated when the line is saved).
+
+### 3.1 Shared quotation pricing (F09)
+
+`backend/src/billing/calculators/pricing.ts` provides `resolveUnitPrice`,
+`computeLine`, and `computeTotals`. Explicit line overrides take precedence over
+template overrides, then the existing F06 effective-price helper. `computeLine`
+returns `line_amount`, `tax_amount`, and `line_total`; `computeTotals` returns
+`subtotal`, `estimated_tax`, and `total`. Amounts are strings and estimates are
+pre-discount. Inputs are validated against PostgreSQL amount and quantity bounds;
+tax rates are 0–100 with at most three fractional digits. Tax is rounded
+half-up per line before summation. F12 may reuse these helpers, but invoice
+calculation remains authoritative and must apply its discount rules separately.
 
 ---
 

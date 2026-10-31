@@ -33,6 +33,10 @@ Three purposes:
 
 | Documentation file | Status | Purpose |
 |---|---|---|
+| `docs/implementation/f09-checklist.md` | EXISTING | F09 prerequisite assessment, blocked items and implementation checklist. |
+
+| Documentation file | Status | Purpose |
+|---|---|---|
 | `docs/implementation/auth-integration-checklist.md` | EXISTING | F01 gate, manual walkthrough and pending F02/deployment checklist. |
 
 F01 frontend additions: `frontend/src/features/auth/` contains the login and
@@ -108,7 +112,8 @@ This folder is the engine, not the API. The API lives in `modules/billing-runs/`
 
 | File | Status | Owner | Purpose |
 |---|---|---|---|
-| `calculators/pricing.ts` | SCAFFOLDED | F09 | Pure functions: `computeLine`, `computeTotals` (quantity × unit_price, tax per line). |
+| `calculators/pricing.ts` | EXISTING | F09 | Pure `resolveUnitPrice`, `computeLine`, `computeTotals`; decimal-safe pre-discount pricing. |
+| `calculators/pricing.test.ts` | EXISTING | F09 | Price precedence, tax rounding, precision and input-boundary tests. |
 | `calculators/periods.ts` | SCAFFOLDED | F12 | Pure period-date math: `periodStart`/`periodEnd`; month-end clamping; leap years. |
 | `calculators/tax.ts` | SCAFFOLDED | F09 | Pure per-line tax computation; aggregates `invoice_tax_details` from rounded lines. |
 | `calculators/discounts.ts` | SCAFFOLDED | F15 | Pure discount eligibility and allocation: `selectEligibleDiscount`, `allocateToLines`. |
