@@ -10,6 +10,7 @@ import { productsRouter, variantsRouter } from '../modules/products/products.rou
 import { taxesRouter } from '../modules/taxes/index.js'
 import { paymentTermsRouter } from '../modules/payment-terms/index.js'
 import { VERSION } from '../version.js'
+import { createBillingRunsRouter } from '../modules/billing-runs/index.js'
 
 export interface HealthPayload {
   status: string
@@ -52,6 +53,7 @@ export function createApiRouter({
     '/auth',
     createAuthRouter({ service: authService, config, authenticate }),
   )
+  router.use('/billing', createBillingRunsRouter(authenticate))
   router.use('/customers', createCustomersRouter(authenticate))
   router.use('/me', createMeRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))
