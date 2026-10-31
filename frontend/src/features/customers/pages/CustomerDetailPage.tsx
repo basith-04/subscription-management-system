@@ -61,7 +61,7 @@ function Detail({ id }: { id: number }) {
       <CustomerProfileCard customer={customer} />
       <CustomerSubscriptionsSection customerId={id} />
       <CustomerInvoicesSection customerId={id} />
-      <CustomerOutstandingSection outstanding={customer.outstanding_amount} overdue={customer.overdue_amount} />
+      <CustomerOutstandingSection customerId={id} outstanding={customer.outstanding_amount} overdue={customer.overdue_amount} />
     </section>
   )
 }

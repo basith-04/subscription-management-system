@@ -2,6 +2,7 @@
 // The shared lib/state-machine.ts helper is still a placeholder on main; this module keeps its own
 // table and does the conditional UPDATE in the repository (`UPDATE … WHERE id=$1 AND status=$expected`).
 import { ApiError } from '../../lib/errors.js'
+import { compare } from '../../lib/money.js'
 import { INVOICE_ERROR_CODES, type InvoiceStatus } from './invoices.constants.js'
 
 /** Who may trigger a transition. `payments` transitions are reserved for the F13 payment service. */
@@ -43,3 +44,15 @@ export function assertTransition(from: InvoiceStatus, to: InvoiceStatus, actor: 
 
 /** Statuses an invoice may be emailed from (send is an action, not a state). */
 export const SENDABLE_STATUSES: readonly InvoiceStatus[] = ['confirmed', 'paid']
+
+/**
+ * Status an invoice must take after its paid amount changes (payment recorded or voided).
+ * Used ONLY by the payment service (F13) through invoices.payment-sync.ts: `confirmed → paid` when nothing is left
+ * to pay and `paid → confirmed` when a void leaves a balance. Returns the same status when nothing changes.
+ */
+export function statusAfterBalanceChange(status: InvoiceStatus, total: string, amountPaid: string): InvoiceStatus {
+  const settled = compare(total, amountPaid) === 0
+  if (status === 'confirmed' && settled) return 'paid'
+  if (status === 'paid' && !settled) return 'confirmed'
+  return status
+}

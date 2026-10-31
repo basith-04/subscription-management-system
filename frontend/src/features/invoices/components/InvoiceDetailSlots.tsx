@@ -1,18 +1,19 @@
 // Integration slots on the invoice detail page. Each is an isolated, self-contained section so other
 // features can fill them without touching InvoiceDetailPage:
-//   F13 → replace the body of PaymentsSlot with its payments panel (record payment, allocations, void)
+//   F13 → PaymentsSlot renders the payments feature's PaymentsPanel (history, record payment, void)
 //   F15 → replace the body of DiscountSlot with the applied-discount panel
 // Do NOT add feature logic here; render the other feature's component instead.
+import { PaymentsPanel } from '../../payments'
 import type { InvoiceDetail } from '../types'
 
 export interface InvoiceSlotProps { invoice: InvoiceDetail }
 
 export function PaymentsSlot({ invoice }: InvoiceSlotProps) {
+  // F13: payment history, "Record payment" and Void live in the payments feature.
   return (
-    <section className="invoice-slot" data-slot="payments" aria-label="Payments">
-      <h2>Payments</h2>
-      <p className="invoice-muted">Payments for {invoice.number} will appear here once payment recording (F13) is available.</p>
-    </section>
+    <PaymentsPanel
+      invoice={{ id: invoice.id, number: invoice.number, status: invoice.status, customerId: invoice.customer.id, amountDue: invoice.amount_due }}
+    />
   )
 }
 

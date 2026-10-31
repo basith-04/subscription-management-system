@@ -51,7 +51,7 @@ export async function createInvoiceTestDb(): Promise<InvoiceTestDb> {
     schema,
     async reset() {
       await pool.query(
-        `TRUNCATE invoice_tax_details, invoice_items, invoices, billing_runs, subscription_items, subscriptions,
+        `TRUNCATE payment_allocations, payments, invoice_tax_details, invoice_items, invoices, billing_runs, subscription_items, subscriptions,
                   audit_logs, customers, users RESTART IDENTITY CASCADE`,
       )
       await pool.query('ALTER SEQUENCE invoice_number_seq RESTART WITH 1')
@@ -68,7 +68,7 @@ export async function createInvoiceTestDb(): Promise<InvoiceTestDb> {
   try {
     await runMigrations(pool, undefined, ['f00', 'f05', 'f06'])
     await pool.query(SUBSCRIPTION_STAND_INS)
-    await runMigrations(pool, undefined, ['f11'])
+    await runMigrations(pool, undefined, ['f11', 'f13'])
     await runReferenceSeeds(pool)
   } catch (error) {
     await fixture.teardown() // never leak the throw-away schema when setup fails

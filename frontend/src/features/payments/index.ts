@@ -1,1 +1,5 @@
-// Public exports of the payments feature (selects, badges). Nothing else is imported from outside. PLACEHOLDER — replace with implementation.
+// Public exports of the payments feature. Nothing else is imported from outside.
+export { PaymentsPanel } from './components/PaymentsPanel'
+export { PaymentListRoute } from './routes/PaymentRoutes'
+export { MethodSelect } from './components/MethodSelect'
+export type { Payment, PaymentMethod } from './types'

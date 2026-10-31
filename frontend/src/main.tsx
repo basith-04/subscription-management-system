@@ -11,6 +11,7 @@ import { RequireAuth, RequireRole } from './features/auth/guards'
 import { AccountShell } from './features/auth/AccountShell'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
+import { PaymentListRoute } from './features/payments'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
 
@@ -38,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="customers/:id/edit" element={<CustomerFormPage />} />
             <Route path="invoices" element={<InvoiceListRoute />} />
             <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
+            <Route path="payments" element={<PaymentListRoute />} />
             <Route path="products" element={<ProductListRoute />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />
