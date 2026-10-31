@@ -6,13 +6,15 @@ const navigation = [
   { to: '/app/customers', label: 'Customers', mark: '01' },
   { to: '/app/products', label: 'Catalogue', mark: '02' },
   { to: '/app/plans', label: 'Plans', mark: '03' },
-  { to: '/app/taxes', label: 'Taxes', mark: '04' },
-  { to: '/app/payment-terms', label: 'Payment terms', mark: '05' },
+  { to: '/app/invoices', label: 'Invoices', mark: '04' },
+  { to: '/app/payments', label: 'Payments', mark: '05' },
+  { to: '/app/taxes', label: 'Taxes', mark: '06' },
+  { to: '/app/payment-terms', label: 'Payment terms', mark: '07' },
 ]
 
 function Workspace() {
   const { user } = useAuth()
-  const items = user?.role === 'admin' ? [...navigation, { to: '/app/users', label: 'Team', mark: '06' }] : navigation
+  const items = user?.role === 'admin' ? [...navigation, { to: '/app/users', label: 'Team', mark: '08' }] : navigation
 
   return <div className="workspace-shell">
     <aside className="workspace-rail">

@@ -6,6 +6,7 @@ import { ERROR_CODES } from '../../lib/error-codes.js'
 import { ApiError } from '../../lib/errors.js'
 import { buildMeta, parsePagination } from '../../lib/pagination.js'
 import type { PageMeta } from '../../lib/responses.js'
+import { getBalanceTotals } from '../payments/index.js'
 import { ADDRESS_COLUMNS, ADDRESS_KEYS, CUSTOMER_AUDIT, type AddressKey } from './customers.constants.js'
 import * as repo from './customers.repository.js'
 import type {
@@ -134,7 +135,14 @@ async function requireCustomer(db: Queryable, id: number, lock = false): Promise
 
 export async function get(id: number, db: Queryable): Promise<CustomerDetailDto> {
   const dto = toCustomerDto(await requireCustomer(db, id))
-  return { ...dto, subscriptions_count: null, outstanding_amount: null, overdue_amount: null }
+  // F13 fills the outstanding/overdue totals (null only while the invoices table is not migrated).
+  const balances = await getBalanceTotals(db, { customerId: id })
+  return {
+    ...dto,
+    subscriptions_count: null,
+    outstanding_amount: balances?.outstanding_amount ?? null,
+    overdue_amount: balances?.overdue_amount ?? null,
+  }
 }
 
 type ChangeSet = Record<string, unknown>

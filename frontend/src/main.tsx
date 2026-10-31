@@ -9,6 +9,8 @@ import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth, RequireRole } from './features/auth/guards'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
+import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
+import { PaymentListRoute } from './features/payments'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
 import { PlanListRoute } from './features/plans/routes/PlanListRoute'
@@ -42,6 +44,9 @@ createRoot(document.getElementById('root')!).render(
             <Route path="customers/new" element={<CustomerFormPage />} />
             <Route path="customers/:id" element={<CustomerDetailPage />} />
             <Route path="customers/:id/edit" element={<CustomerFormPage />} />
+            <Route path="invoices" element={<InvoiceListRoute />} />
+            <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
+            <Route path="payments" element={<PaymentListRoute />} />
             <Route path="products" element={<ProductListRoute />} />
             <Route element={<RequireRole roles={['admin']} />}>
               <Route path="products/new" element={<ProductFormRoute />} />
@@ -54,6 +59,10 @@ createRoot(document.getElementById('root')!).render(
               <Route path="users" element={<StaffListPage />} />
             </Route>
           </Route>
+        </Route>
+        {/* Standalone print view: deliberately outside any app chrome. */}
+        <Route element={<RequireRole roles={['admin', 'staff']} />}>
+          <Route path="/print/invoices/:id" element={<InvoicePrintRoute />} />
         </Route>
       </Route>
     </Routes></BrowserRouter></QueryClientProvider>
