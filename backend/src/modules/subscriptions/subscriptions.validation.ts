@@ -1,9 +1,23 @@
 import { ERROR_CODES } from '../../lib/error-codes.js'
 import { ApiError } from '../../lib/errors.js'
+import { isCalendarDate } from '../../lib/dates.js'
 import { assertPlanAvailable, type PlanAvailabilityFields } from '../plans/index.js'
 
 export interface SubscriptionPlanRules extends PlanAvailabilityFields {
   min_quantity: number
+}
+
+/** D-18: staff may not create a subscription with a backdated start. */
+export function assertCreationStartDate(role: string, startDate: string, today: string): void {
+  if (role !== 'admin' && role !== 'staff') {
+    throw new ApiError(403, ERROR_CODES.FORBIDDEN, 'You do not have permission to create subscriptions')
+  }
+  if (!isCalendarDate(startDate) || !isCalendarDate(today)) throw new RangeError('Invalid calendar date')
+  if (role === 'staff' && startDate < today) {
+    throw new ApiError(422, ERROR_CODES.VALIDATION_ERROR, 'Invalid input', [
+      { field: 'start_date', message: 'Staff cannot use a backdated start date' },
+    ])
+  }
 }
 
 /**

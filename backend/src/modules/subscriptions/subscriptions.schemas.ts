@@ -1,11 +1,12 @@
 import { z } from 'zod'
+import { isCalendarDate } from '../../lib/dates.js'
 
 // Request shape only: existence, active flags, policies, ownership, minimum
 // quantity, date rules involving today, and transitions belong in the service.
 const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 const pathId = z.string().regex(/^[1-9]\d*$/, 'Must be a positive integer')
   .transform(Number).pipe(id)
-const date = z.iso.date().refine((value) => !value.startsWith('0000-'), 'Must be a valid PostgreSQL calendar date')
+const date = z.iso.date().refine(isCalendarDate, 'Must be a valid PostgreSQL calendar date')
 const money = z.string().regex(/^\d{1,10}(?:\.\d{1,2})?$/, 'Must be a non-negative amount with at most two decimals')
 const queryId = pathId.optional()
 const page = pathId.optional()

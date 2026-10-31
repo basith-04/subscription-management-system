@@ -45,6 +45,9 @@ Status: **blocked on prerequisites**. This is not a completed feature.
   match the selected template; request-shape validation cannot check the database.
 - [x] Add a pure F09 plan/minimum-quantity guard that reuses F07's public
   `assertPlanAvailable`; services must reload the plan and call it transactionally.
+- [x] Implement the shared business-date primitive and D-18 backdate guard with
+  injected time; `APP_TIMEZONE` defaults to `Asia/Kolkata` and is validated.
+  Service wiring and timezone-aware request tests remain pending.
 - [ ] Wire pricing into creation, editing and detail responses when F09's
   transaction boundaries and F05/F08 contracts are available.
 

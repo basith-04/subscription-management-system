@@ -1,7 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { assertPlanAndQuantities } from './subscriptions.validation.js'
+import { assertCreationStartDate, assertPlanAndQuantities } from './subscriptions.validation.js'
 
 const plan = { is_active: true, available_from: '2026-01-01', available_to: '2026-12-31', min_quantity: 3 }
+
+describe('F09 creation start dates', () => {
+  it('allows administrators to backdate and staff to use today or later', () => {
+    expect(() => assertCreationStartDate('admin', '2026-10-31', '2026-11-01')).not.toThrow()
+    expect(() => assertCreationStartDate('staff', '2026-11-01', '2026-11-01')).not.toThrow()
+    expect(() => assertCreationStartDate('staff', '2026-11-02', '2026-11-01')).not.toThrow()
+  })
+
+  it('rejects staff backdating and customer creation', () => {
+    expect(() => assertCreationStartDate('staff', '2026-10-31', '2026-11-01')).toThrowError(
+      expect.objectContaining({ status: 422, code: 'VALIDATION_ERROR' }),
+    )
+    expect(() => assertCreationStartDate('customer', '2026-11-01', '2026-11-01')).toThrowError(
+      expect.objectContaining({ status: 403, code: 'FORBIDDEN' }),
+    )
+  })
+
+  it('fails closed for invalid input or clock dates', () => {
+    expect(() => assertCreationStartDate('staff', '2026-02-30', '2026-11-01')).toThrow(RangeError)
+    expect(() => assertCreationStartDate('staff', '2026-11-01', 'not-a-date')).toThrow(RangeError)
+  })
+})
 
 describe('F09 plan and quantity validation', () => {
   it('accepts inclusive availability boundaries and quantities at the minimum', () => {

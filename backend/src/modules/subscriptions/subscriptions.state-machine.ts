@@ -1,5 +1,6 @@
 import { ERROR_CODES } from '../../lib/error-codes.js'
 import { ApiError } from '../../lib/errors.js'
+import { isCalendarDate } from '../../lib/dates.js'
 
 /** F09 owns only quotation issue, confirmation and pre-activation cancellation. */
 export type F09SubscriptionAction = 'issue' | 'confirm' | 'cancel'
@@ -26,12 +27,6 @@ export function getF09Transition(action: F09SubscriptionAction, current: string)
     throw new ApiError(409, ERROR_CODES.INVALID_STATE_TRANSITION, 'Subscription state does not permit this action')
   }
   return rule.to
-}
-
-function isCalendarDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000-')) return false
-  const parsed = new Date(`${value}T00:00:00Z`)
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
 }
 
 /** `today` is supplied by the business-time-zone clock, never inferred here. */

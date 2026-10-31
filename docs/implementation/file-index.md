@@ -86,7 +86,8 @@ reset screens remain pending F02.
 |---|---|---|---|---|
 | `db.ts` | EXISTING | F00 | Database client, transaction helpers and Postgres error mapping. | Every repository. |
 | `money.ts` | SCAFFOLDED | F00 | Decimal-safe money: string arithmetic, `ROUND_HALF_UP` to 2 dp. | Products (F06), plans (F07), billing (F12), payments (F13). |
-| `dates.ts` | SCAFFOLDED | F00 | "Today" in `APP_TIMEZONE`; `YYYY-MM-DD` parsing. | Everywhere dates matter; critical for F12. |
+| `dates.ts` | EXISTING | F00 | Validates ISO calendar dates and resolves an injected instant in `APP_TIMEZONE`. | F09 and later date-dependent features. |
+| `dates.test.ts` | EXISTING | F00 | Business-timezone and calendar-date regression tests. | Date helpers. |
 | `pagination.ts` | SCAFFOLDED | F00 | Parse `page` / `page_size` (max 100), build `meta`; whitelisted sort parsing. | Every list endpoint. |
 | `responses.ts` | EXISTING | F00 | `ok`, `created`, `list`, `noContent`. | Every controller. |
 | `errors.ts` | EXISTING | F00 | `ApiError` class (status, code, message, details). | Services, middleware. |
