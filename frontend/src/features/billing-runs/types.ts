@@ -1,1 +1,1 @@
-// TypeScript types consumed by the billing-runs UI. PLACEHOLDER — replace with implementation.
+export type { BillingRun, BillingRunDetail, UpcomingSubscription } from '../../../api/billing-runs'

@@ -5,6 +5,7 @@ import type { AuthService } from '../modules/auth/auth.service.js'
 import { createCustomersRouter, createMeRouter } from '../modules/customers/customers.routes.js'
 import { createInvoicesRouter } from '../modules/invoices/invoices.routes.js'
 import { createInvoicePaymentsRouter, createPaymentsRouter } from '../modules/payments/payments.routes.js'
+import { createQuotationsRouter, createSubscriptionsRouter } from '../modules/subscriptions/subscriptions.routes.js'
 import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
@@ -61,6 +62,8 @@ export function createApiRouter({
   router.use('/invoices', createInvoicesRouter(authenticate, config))
   router.use('/invoices', createInvoicePaymentsRouter(authenticate))
   router.use('/payments', createPaymentsRouter(authenticate))
+  router.use('/quotations', createQuotationsRouter(authenticate))
+  router.use('/subscriptions', createSubscriptionsRouter(authenticate))
   router.use('/products', productsRouter)
   router.use('/variants', variantsRouter)
   router.use('/users', usersRouter)
