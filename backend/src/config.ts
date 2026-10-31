@@ -63,9 +63,9 @@ function parseBoolean(
 /**
  * Read configuration from the process environment.
  *
- * The base scaffold must still start without external services, so database and
- * JWT values have development-only defaults. Production requires an explicit
- * JWT secret and refuses wildcard CORS origins with credentials.
+ * Development defaults point at a local PostgreSQL database and a throwaway JWT
+ * secret. Production requires an explicit JWT secret and refuses wildcard CORS
+ * origins with credentials.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const port = parseInteger('PORT', env.PORT, 4000, 1, 65535)
