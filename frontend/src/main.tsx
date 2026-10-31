@@ -10,6 +10,7 @@ import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth, RequireRole } from './features/auth/guards'
 import { AccountShell } from './features/auth/AccountShell'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
+import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailPage, ProductFormPage, ProductListPage } from './features/products'
 
@@ -34,9 +35,15 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/app/customers/new" element={<CustomerFormPage />} />
           <Route path="/app/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/app/customers/:id/edit" element={<CustomerFormPage />} />
+          <Route path="/app/invoices" element={<InvoiceListRoute />} />
+          <Route path="/app/invoices/:id" element={<InvoiceDetailRoute />} />
           <Route path="/app/products" element={<ProductListRoute />} />
           <Route path="/app/products/new" element={<ProductFormRoute />} />
           <Route path="/app/products/:id" element={<ProductDetailRoute />} />
+        </Route>
+        {/* Standalone print view: deliberately outside any app chrome. */}
+        <Route element={<RequireRole roles={['admin', 'staff']} />}>
+          <Route path="/print/invoices/:id" element={<InvoicePrintRoute />} />
         </Route>
       </Route>
     </Routes></BrowserRouter></QueryClientProvider>
