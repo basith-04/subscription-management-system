@@ -1,6 +1,6 @@
 # API Specification (Contract Draft)
 
-> **Status:** Draft contract. **F01 authentication, F03 (Staff) and F06 (Products & variants)** endpoints are implemented. Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
+> **Status:** Draft contract. **F01 (Auth), F03 (Staff), F04 (Customers), F05 (Taxes/Terms), F06 (Products), F07 (Plans), F11 (Invoices), and F12 (Billing runs)** endpoints are implemented. Other endpoints are not implemented yet. The frontend and backend developers should agree on this document first and change it through a pull request when the contract changes.
 > Related: [Database Design](../database/database-design.md) · [State Machines](../architecture/state-machines.md) · [Billing Engine](../architecture/billing-engine.md) · [Security & RBAC](../architecture/security-and-rbac.md)
 
 ## 1. Conventions
@@ -306,6 +306,13 @@ Staff/Admin see all. A customer sees only their own through `/me/subscriptions` 
 | GET | `/payment-terms` | List terms | A, S | — | list | — | — |
 | POST / PATCH | `/payment-terms`, `/payment-terms/:id` | Create / update (`name`, `due_days`, `is_active`) | A | body | term | `due_days ≥ 0` | 409 |
 
+**F05 persistence:** tax rules and payment terms are read and written in
+PostgreSQL. Mutations and their audit records share a transaction. F05 API
+name checks are case-insensitive; database exact-name constraints remain the
+last guard against identical concurrent names. Reference data must be seeded
+after applying the F05 migration. Records from the former process-local store
+are not automatically transferred when switching to PostgreSQL.
+
 ---
 
 ## 10. Discounts
@@ -380,7 +387,19 @@ There is no `DELETE /payments/:id` and no `PATCH` of amounts: correct mistakes b
 
 ---
 
-## 13. Dashboard and reports
+## 13. Audit logs
+
+`GET /audit-logs` is an Admin-only, read-only audit-trail endpoint. It accepts
+`entity_type`, `entity_id`, `actor_user_id`, `action`, `date_from`, `date_to`,
+`page`, and `page_size` (default 20, maximum 100). Dates are ISO timestamps
+and `date_from` must not exceed `date_to`. Results are ordered
+`created_at DESC, id DESC`; paging is bounded to page 1000. The response uses
+the normal list envelope: `{ data: AuditLog[], meta }`. `actor: null` means a
+system event; a retained event whose user no longer resolves is labelled
+`Deleted user`. There are intentionally no create, update, or delete audit-log
+endpoints. Old/new values exclude credentials, tokens, cookies and sessions.
+
+## 14. Dashboard and reports
 
 All role **A, S** (finance lead is a Staff account). Every endpoint accepts `date_from`, `date_to` (default: current month) unless stated. Aggregation happens in SQL; responses are small and are designed to render in < 2 s with thousands of subscriptions.
 
@@ -399,7 +418,7 @@ Exporting to CSV (`?format=csv`) is a possible extra; OPEN QUESTION.
 
 ---
 
-## 14. Endpoint-to-role quick matrix
+## 15. Endpoint-to-role quick matrix
 
 | Area | Admin | Staff | Customer |
 |---|---|---|---|

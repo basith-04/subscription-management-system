@@ -2,7 +2,7 @@
 // F13 (payments) and F14 (portal) import payment_state from here instead of re-deriving it.
 export { derivePaymentState, paymentStateSql, todayInBusinessTimezone } from './invoices.payment-state.js'
 export type { PaymentStateInput } from './invoices.payment-state.js'
-export { PAYMENT_STATES, INVOICE_STATUSES } from './invoices.constants.js'
+export { PAYMENT_STATES, INVOICE_STATUSES, OVERDUE_GRACE_DAYS } from './invoices.constants.js'
 export type { InvoiceStatus, PaymentState } from './invoices.constants.js'
 export { invoiceHooks } from './invoices.hooks.js'
 export type { InvoiceHooks } from './invoices.hooks.js'

@@ -32,10 +32,13 @@ export function AccountShell({ area }: { area: 'portal' | 'app' }) {
       <p>Signed in as {user?.role}.</p>
       {area === 'app' && <nav aria-label="Back office">
         <Link to="/app/customers">Customers</Link>
+        <Link to="/app/quotations">Quotations</Link>
+        <Link to="/app/subscriptions">Subscriptions</Link>
         <Link to="/app/invoices">Invoices</Link>
         <Link to="/app/payments">Payments</Link>
         <Link to="/app/products">Products</Link>
         <Link to="/app/quotation-templates">Quotation templates</Link>
+        {user?.role === 'admin' && <Link to="/app/settings/audit-log">Settings → Audit Log</Link>}
       </nav>}
       {area === 'portal' && <p><Link to="/portal/profile">My profile</Link></p>}
       {warnings?.map((warning) => <p key={`${warning.field}:${warning.message}`} role="status">{warning.message}</p>)}

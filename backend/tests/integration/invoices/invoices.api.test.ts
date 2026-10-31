@@ -93,10 +93,11 @@ describe.skipIf(!dbAvailable)('F11 invoices API', () => {
       expect((await request(app).post(`${API}/${b}/cancel`).set(as('admin')).send({ reason: 'dup' })).status).toBe(200)
     })
 
-    it('does not expose creation or F13/F14 routes', async () => {
+    it('does not expose invoice creation and keeps /me/invoices customer-only', async () => {
       expect((await request(app).post(API).set(as('admin')).send({ subscription_id: 1, period_start: '2026-11-01' })).status).toBe(404)
       expect((await request(app).get(`${API}/1/payments`).set(as('admin'))).status).toBe(404)
-      expect((await request(app).get('/api/v1/me/invoices').set(as('alice'))).status).toBe(404)
+      // /me/invoices* is F14's customer-only namespace; back-office roles must not get invoices through it.
+      expect((await request(app).get('/api/v1/me/invoices').set(as('admin'))).status).toBe(403)
     })
   })
 

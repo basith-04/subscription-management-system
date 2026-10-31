@@ -10,6 +10,7 @@ import { DiscountSlot, PaymentsSlot } from '../components/InvoiceDetailSlots'
 import { InvoiceDocument } from '../components/InvoiceDocument'
 import { SendInvoiceDialog } from '../components/SendInvoiceDialog'
 import { useConfirmInvoice, useInvoice } from '../hooks/useInvoices'
+import { EntityHistoryLink } from '../../audit-logs'
 import '../invoices.css'
 
 type Dialog = null | 'confirm' | 'cancel' | 'send'
@@ -58,6 +59,7 @@ export function InvoiceDetailPage({ id: idProp }: { id?: number } = {}) {
       <header className="invoices-header">
         <h1>Invoice {invoice.number}</h1>
         <div className="invoice-actions" role="toolbar" aria-label="Invoice actions">
+          {user?.role === 'admin' && <EntityHistoryLink entityType="invoice" entityId={invoice.id}>Audit history</EntityHistoryLink>}
           {invoice.can_confirm && <button type="button" className="invoice-primary" disabled={confirm.isPending} onClick={() => setDialog('confirm')}>{confirm.isPending ? 'Confirming…' : 'Confirm'}</button>}
           {invoice.can_send && <button type="button" onClick={() => setDialog('send')}>{invoice.sent_at ? 'Send again' : 'Send'}</button>}
           <button type="button" onClick={() => window.open(`/print/invoices/${invoice.id}`, '_blank', 'noopener')}>Print</button>

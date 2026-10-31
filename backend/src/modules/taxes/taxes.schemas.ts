@@ -41,24 +41,24 @@ export const createTaxSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(120, 'Name must be at most 120 characters'),
   rate: taxRateSchema,
   is_active: z.boolean().optional(),
-})
+}).strict()
 
 export const updateTaxSchema = z.object({
   name: z.string().trim().min(1, 'Name cannot be empty').max(120, 'Name must be at most 120 characters').optional(),
   rate: taxRateSchema.optional(),
   is_active: z.boolean().optional(),
-})
+}).strict().refine((value) => Object.keys(value).length > 0, 'Provide at least one field')
 
 export const taxQuerySchema = z.object({
   is_active: z
     .enum(['true', 'false'])
     .optional()
     .transform((val) => (val === undefined ? undefined : val === 'true')),
-})
+}).strict()
 
 export const taxIdParamSchema = z.object({
-  id: z.string().min(1, 'ID is required'),
-})
+  id: z.string().regex(/^[1-9]\d*$/, 'ID must be a positive integer').refine((value) => Number.isSafeInteger(Number(value)), 'ID is too large'),
+}).strict()
 
 export type CreateTaxInput = z.infer<typeof createTaxSchema>
 export type UpdateTaxInput = z.infer<typeof updateTaxSchema>

@@ -2,19 +2,28 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthLayout } from './features/auth/AuthLayout'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth, RequireRole } from './features/auth/guards'
-import { AccountShell } from './features/auth/AccountShell'
 import { CustomerDetailPage, CustomerFormPage, CustomerListPage } from './features/customers'
+import { BillingRunPage } from './features/billing-runs'
 import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './features/invoices'
 import { PaymentListRoute } from './features/payments'
-import { ProfilePage } from './features/portal/pages/ProfilePage'
+import { QuotationCreatePage, QuotationDetailPage, QuotationListPage, SubscriptionDetailPage, SubscriptionListPage } from './features/subscriptions'
+import { ChangePasswordPage, MyInvoiceDetailPage, MyInvoicesPage, MySubscriptionDetailPage, MySubscriptionsPage, PortalHomePage, ProfilePage } from './features/portal'
+import { PortalNotFound } from './features/portal/components/PortalNotFound'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
 import { TemplateFormPage, TemplateListPage } from './features/quotation-templates'
+import { AuditLogPage } from './features/audit-logs'
+import { PlanListRoute } from './features/plans/routes/PlanListRoute'
+import { TaxListPage } from './features/taxes'
+import { PaymentTermListPage } from './features/payment-terms'
+import { StaffListPage } from './features/users'
+import { BackOfficeLayout } from './layouts/BackOfficeLayout'
+import { PortalLayout } from './layouts/PortalLayout'
 
 const queryClient = new QueryClient()
 
@@ -28,19 +37,34 @@ createRoot(document.getElementById('root')!).render(
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<RequireRole roles={['customer']} />}>
-          <Route path="/portal" element={<AccountShell area="portal" />}>
+          <Route path="/portal" element={<PortalLayout />}>
+            <Route index element={<PortalHomePage />} />
+            <Route path="subscriptions" element={<MySubscriptionsPage />} />
+            <Route path="subscriptions/:id" element={<MySubscriptionDetailPage />} />
+            <Route path="invoices" element={<MyInvoicesPage />} />
+            <Route path="invoices/:id" element={<MyInvoiceDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="change-password" element={<ChangePasswordPage />} />
+            <Route path="*" element={<PortalNotFound />} />
           </Route>
         </Route>
         <Route element={<RequireRole roles={['admin', 'staff']} />}>
-          <Route path="/app" element={<AccountShell area="app" />}>
+          <Route path="/app" element={<BackOfficeLayout />}>
+            <Route index element={<Navigate to="customers" replace />} />
             <Route path="customers" element={<CustomerListPage />} />
             <Route path="customers/new" element={<CustomerFormPage />} />
             <Route path="customers/:id" element={<CustomerDetailPage />} />
             <Route path="customers/:id/edit" element={<CustomerFormPage />} />
             <Route path="invoices" element={<InvoiceListRoute />} />
             <Route path="invoices/:id" element={<InvoiceDetailRoute />} />
+            <Route path="quotations" element={<QuotationListPage />} />
+            <Route path="quotations/new" element={<QuotationCreatePage />} />
+            <Route path="quotations/:id" element={<QuotationDetailPage />} />
+            <Route path="quotations/:id/edit" element={<QuotationCreatePage />} />
+            <Route path="subscriptions" element={<SubscriptionListPage />} />
+            <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
             <Route path="payments" element={<PaymentListRoute />} />
+            <Route path="billing" element={<BillingRunPage />} />
             <Route path="products" element={<ProductListRoute />} />
             <Route path="quotation-templates" element={<TemplateListPage />} />
             <Route path="quotation-templates/:id" element={<TemplateFormPage />} />
@@ -49,6 +73,13 @@ createRoot(document.getElementById('root')!).render(
               <Route path="quotation-templates/new" element={<TemplateFormPage />} />
             </Route>
             <Route path="products/:id" element={<ProductDetailRoute />} />
+            <Route path="plans" element={<PlanListRoute />} />
+            <Route path="taxes" element={<TaxListPage />} />
+            <Route path="payment-terms" element={<PaymentTermListPage />} />
+            <Route element={<RequireRole roles={['admin']} />}>
+              <Route path="users" element={<StaffListPage />} />
+              <Route path="settings/audit-log" element={<AuditLogPage />} />
+            </Route>
           </Route>
         </Route>
         {/* Standalone print view: deliberately outside any app chrome. */}

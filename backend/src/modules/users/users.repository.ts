@@ -1,4 +1,4 @@
-import { query, isPgError } from '../../lib/db.js'
+import { query, type Queryable } from '../../lib/db.js'
 
 export interface UserRow {
   id: string
@@ -51,8 +51,8 @@ export async function findUserById(id: number): Promise<UserRow | null> {
   return rows[0] ?? null
 }
 
-export async function insertStaff(input: { full_name: string; email: string; password_hash: string; created_by: number }) {
-  const { rows } = await query<UserRow>(
+export async function insertStaff(db: Queryable, input: { full_name: string; email: string; password_hash: string; created_by: number }) {
+  const { rows } = await db.query<UserRow>(
     `INSERT INTO users (role_id, email, password_hash, full_name, created_by)
      VALUES ((SELECT id FROM roles WHERE name = 'staff'), $1, $2, $3, $4)
      RETURNING id::text, email, full_name, is_active, 'staff' as role, created_at, updated_at`,
@@ -61,7 +61,7 @@ export async function insertStaff(input: { full_name: string; email: string; pas
   return rows[0]!
 }
 
-export async function updateUser(id: number, patch: Record<string, unknown>) {
+export async function updateUser(db: Queryable, id: number, patch: Record<string, unknown>) {
   const sets: string[] = []
   const params: unknown[] = []
   for (const [key, val] of Object.entries(patch)) {
@@ -69,7 +69,7 @@ export async function updateUser(id: number, patch: Record<string, unknown>) {
     sets.push(`"${key}" = $${params.length}`)
   }
   params.push(id)
-  const { rows } = await query<UserRow>(
+  const { rows } = await db.query<UserRow>(
     `UPDATE users SET ${sets.join(', ')}, updated_at = now()
      WHERE id = $${params.length}
      RETURNING id::text, email, full_name, is_active,
