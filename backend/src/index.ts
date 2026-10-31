@@ -1,9 +1,11 @@
 import 'dotenv/config'
+import type { Pool } from 'pg'
 import { createApp } from './app.js'
 import { loadConfig } from './config.js'
 
 const config = loadConfig()
 const app = createApp(config)
+const pool = app.locals.pool as Pool | undefined
 
 const server = app.listen(config.port, config.host, () => {
   console.log(
@@ -21,11 +23,18 @@ function shutdown(signal: NodeJS.Signals): void {
   forceExit.unref()
 
   server.close((error) => {
-    if (error) {
-      console.error('graceful shutdown failed', error)
-      process.exit(1)
-    }
-    process.exit(0)
+    void pool
+      ?.end()
+      .catch((poolError: unknown) => {
+        console.error('database pool shutdown failed', poolError)
+      })
+      .finally(() => {
+        if (error) {
+          console.error('graceful shutdown failed', error)
+          process.exit(1)
+        }
+        process.exit(0)
+      })
   })
 }
 

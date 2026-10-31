@@ -1,5 +1,9 @@
-import { Router } from 'express'
-import { plansRouter } from '../modules/plans/plans.routes.js'
+import { Router, type RequestHandler } from 'express'
+import type { Config } from '../config.js'
+import { createAuthRouter } from '../modules/auth/auth.routes.js'
+import type { AuthService } from '../modules/auth/auth.service.js'
+import { createCustomersRouter, createMeRouter } from '../modules/customers/customers.routes.js'
+import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
 import { VERSION } from '../version.js'
@@ -14,20 +18,43 @@ export function healthPayload(): HealthPayload {
   return { status: 'ok', service: 'brightloop-api', version: VERSION }
 }
 
-export const apiRouter = Router()
+export interface ApiRouterDependencies {
+  authService: AuthService
+  config: Config
+  authenticate: RequestHandler
+}
 
-apiRouter.get('/', (_req, res) => {
-  res.json({ data: { name: 'Brightloop Subscription API', version: VERSION, docs: 'See docs/api/api-specification.md' } })
-})
+export function createApiRouter({
+  authService,
+  config,
+  authenticate,
+}: ApiRouterDependencies): Router {
+  const router = Router()
 
-apiRouter.get('/health', (_req, res) => {
-  res.json({ data: healthPayload() })
-})
+  router.get('/', (_req, res) => {
+    res.json({
+      data: {
+        name: 'Brightloop Subscription API',
+        version: VERSION,
+        docs: 'See docs/api/api-specification.md',
+      },
+    })
+  })
 
-// F07
-apiRouter.use('/plans', plansRouter)
+  router.get('/health', (_req, res) => {
+    res.json({ data: healthPayload() })
+  })
 
-// F06
-apiRouter.use('/products', productsRouter)
-apiRouter.use('/variants', variantsRouter)
-apiRouter.use('/users', usersRouter)
+  router.use(
+    '/auth',
+    createAuthRouter({ service: authService, config, authenticate }),
+  )
+  router.use('/customers', createCustomersRouter(authenticate))
+  router.use('/me', createMeRouter(authenticate))
+  router.use('/plans', createPlansRouter(authenticate))
+  router.use('/products', productsRouter)
+  router.use('/variants', variantsRouter)
+  router.use('/users', usersRouter)
+
+  return router
+}

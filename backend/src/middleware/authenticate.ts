@@ -1,21 +1,85 @@
-// Session authentication.
-// TEMPORARY: while F01 is unimplemented, this reads X-User-Id / X-User-Role headers
-// behind DEMO_AUTH_ENABLED=true. When F01 lands, replace with cookie-session
-// verification against the DB; the interface (req.user = { id, role, customerId? })
-// stays the same.
 import type { RequestHandler } from 'express'
-import { ApiError } from './error-handler.js'
-import type { AuthenticatedRequestUser, Role } from './require-role.js'
+import { loadConfig, type Config } from '../config.js'
+import type { AuthUser } from '../lib/auth-user.js'
+import { ApiError } from '../lib/errors.js'
+import { ERROR_CODES } from '../lib/error-codes.js'
+import { verifySessionToken } from '../lib/session.js'
+import { getSharedPool } from '../lib/db.js'
+import { createAuthRepository, type AuthRepository } from '../modules/auth/auth.repository.js'
 
-export const authenticate: RequestHandler = (req, _res, next) => {
-  if (process.env.DEMO_AUTH_ENABLED === 'true') {
-    const userId = req.header('x-user-id')
-    const role = req.header('x-user-role') as Role | undefined
-    if (userId && role) {
-      const user: AuthenticatedRequestUser = { id: Number.parseInt(userId, 10), role }
-      ;(req as unknown as { user: AuthenticatedRequestUser }).user = user
-      return next()
+export interface AuthenticateDependencies {
+  repo: AuthRepository
+  config: Config
+}
+
+/**
+ * Validate the signed cookie and reload the user from the database on every
+ * request. Deleted, inactive or tampered sessions are rejected.
+ */
+export function createAuthenticate({
+  repo,
+  config,
+}: AuthenticateDependencies): RequestHandler {
+  return async (req, _res, next) => {
+    try {
+      const token: unknown = req.cookies?.[config.cookie.name]
+      if (typeof token !== 'string' || token.length === 0) {
+        throw new ApiError(
+          401,
+          ERROR_CODES.UNAUTHENTICATED,
+          'Authentication required',
+        )
+      }
+
+      const session = await verifySessionToken(token, config)
+      if (!session) {
+        throw new ApiError(
+          401,
+          ERROR_CODES.SESSION_EXPIRED,
+          'Your session has expired. Please sign in again.',
+        )
+      }
+
+      const user = await repo.transaction((tx) =>
+        repo.findUserById(tx, session.user_id),
+      )
+
+      if (!user) {
+        throw new ApiError(
+          401,
+          ERROR_CODES.UNAUTHENTICATED,
+          'Authentication required',
+        )
+      }
+
+      if (!user.is_active) {
+        throw new ApiError(
+          403,
+          ERROR_CODES.FORBIDDEN,
+          'This account is disabled. Contact an administrator.',
+        )
+      }
+
+      const authUser: AuthUser = {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+        customer_id: user.customer_id,
+      }
+      req.user = authUser
+      next()
+    } catch (error) {
+      next(error)
     }
   }
-  return next(new ApiError(401, 'UNAUTHENTICATED', 'Not logged in'))
+}
+
+/** Compatibility entry point for routes using the shared F00 middleware. */
+export const authenticate: RequestHandler = (req, res, next) => {
+  const config = loadConfig()
+  return createAuthenticate({
+    repo: createAuthRepository(getSharedPool(config.databaseUrl)),
+    config,
+  })(req, res, next)
 }

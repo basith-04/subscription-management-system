@@ -77,12 +77,15 @@ function LandingPage() {
   return (
     <div className="page">
       <header className="site-header">
-        <a className="brand" href="/" aria-label="Brightloop home" onClick={(e) => { e.preventDefault(); navigate('/') }}>
+        <a className="brand" href="/" aria-label="Brightloop home">
           <span className="brand-mark" aria-hidden="true">B</span><span>Brightloop</span>
         </a>
         <nav className="nav" aria-label="Main navigation">
-          <a href="/app/products" onClick={(e) => { e.preventDefault(); navigate('/app/products') }}>Products</a>
+          <a href="/app/products">Products</a>
           <a href="#status">Status</a>
+          <a href="/login">Sign in</a>
+          <a href="/register">Register</a>
+          <a href="/docs/api/api-specification.md">API docs</a>
         </nav>
       </header>
       <main>
@@ -91,7 +94,7 @@ function LandingPage() {
           <h1>One platform for the whole subscription lifecycle.</h1>
           <p className="lede">Quote, subscribe, bill, collect, and report — without spreadsheets. Built for the Odoo x Make-A-Ton 9.0 Kochi Hackathon 2026.</p>
           <div className="hero-actions">
-            <a className="button primary" href="/app/products" onClick={(e) => { e.preventDefault(); navigate('/app/products') }}>Open catalogue</a>
+            <a className="button primary" href="/app/products">Open catalogue</a>
           </div>
         </section>
         <section className="section">

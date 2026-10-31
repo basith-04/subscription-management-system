@@ -1,6 +1,8 @@
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createPlanTestDb, TEST_DATABASE_URL, type PlanTestDb } from '../helpers/plans-test-db.js'
+import { createUser } from '../factories/user.factory.js'
+import { cookiePair } from '../helpers/cookies.js'
 
 // Requires a reachable PostgreSQL 15+ in TEST_DATABASE_URL; skipped otherwise (e.g. CI without a DB service).
 describe.skipIf(!TEST_DATABASE_URL)('plans API (integration)', () => {
@@ -8,7 +10,8 @@ describe.skipIf(!TEST_DATABASE_URL)('plans API (integration)', () => {
   let app: import('express').Express
   let closePool: () => Promise<void>
 
-  const as = (role: 'admin' | 'staff' | 'customer') => ({ 'x-user-id': '1', 'x-user-role': role })
+  const cookies: Partial<Record<'admin' | 'staff' | 'customer', string>> = {}
+  const as = (role: 'admin' | 'staff' | 'customer') => ({ Cookie: cookies[role]! })
   const api = () => request(app)
 
   const body = (over: Record<string, unknown> = {}) => ({
@@ -48,15 +51,24 @@ describe.skipIf(!TEST_DATABASE_URL)('plans API (integration)', () => {
     const { createApp } = await import('../../src/app.js')
     const { loadConfig } = await import('../../src/config.js')
     closePool = (await import('../../src/lib/db.js')).closePool
-    app = createApp(loadConfig({ ALLOWED_ORIGINS: 'http://localhost:5173' } as NodeJS.ProcessEnv))
+    app = createApp(loadConfig({ DATABASE_URL: process.env.DATABASE_URL, ALLOWED_ORIGINS: 'http://localhost:5173', RATE_LIMIT_MAX: '1000' } as NodeJS.ProcessEnv))
+    for (const role of ['admin', 'staff', 'customer'] as const) {
+      await createUser(db.admin, { email: `${role}@plans.example.test`, role })
+      const login = await request(app).post('/api/v1/auth/login').send({ email: `${role}@plans.example.test`, password: 'Example!Pass123' })
+      expect(login.status).toBe(200)
+      cookies[role] = cookiePair(login)
+    }
   })
   afterAll(async () => {
-    await closePool()
-    await db.teardown()
+    if (closePool) await closePool()
+    if (db) await db.teardown()
   })
   beforeEach(() => db.reset())
 
   describe('authorization matrix', () => {
+    it('does not accept forged demo identity headers', async () => {
+      expect((await api().get('/api/v1/plans').set({ 'x-user-id': '1', 'x-user-role': 'admin' })).status).toBe(401)
+    })
     it('rejects unauthenticated requests with 401', async () => {
       expect((await api().get('/api/v1/plans')).status).toBe(401)
     })
