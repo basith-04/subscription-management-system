@@ -121,6 +121,36 @@ Role changes are not exposed (an Admin cannot promote via API in v1; OPEN QUESTI
 
 Changing a customer address does not change issued invoices (snapshots).
 
+**Implementation notes (F04)**
+
+*Access.* `/customers*`: Admin and Staff only (Customers → `403 FORBIDDEN`). `/me/profile`: Customer only (Admin/Staff → `403`). The customer is always resolved from the authenticated session (`req.user.customer_id`, via `scopeToCustomer`); no id is ever read from the path, query or body. A customer user with no linked customer record gets `403`.
+
+*Customer object* (`POST`/`PATCH`/`GET /customers/:id`):
+```json
+{ "data": { "id": 7, "name": "Asha Menon", "company_name": "Zed Corp", "email": "asha@example.com", "phone": "+91 98765 43210",
+            "address": { "line1": "1 Main St", "line2": null, "city": "Kochi", "state": null, "postal_code": "682001", "country": "India" },
+            "tax_id": "29ABCDE1234F1Z5", "notes": null, "is_active": true, "has_portal_login": false,
+            "warnings": [ { "field": "email", "message": "Another customer record uses this email. Both records were kept." } ] } }
+```
+`warnings` is present only when there is something to warn about. `user_id` is never exposed (`has_portal_login` says whether one exists). `GET /customers/:id` additionally returns `subscriptions_count`, `outstanding_amount`, `overdue_amount`, all **`null` until F09 / F13** fill them (never fabricated). List rows are `{ id, name, company_name, email, phone, is_active }` (`active_subscriptions_count` is added by F09).
+
+*Request fields and limits.* `name` (required, ≤120), `company_name` (≤200), `email` (required on create, valid, ≤254, stored lower-cased), `phone` (≤32; digits, spaces and `+ ( ) . -`), `address` object with optional `line1`/`line2` (≤200), `city`/`state`/`country` (≤100), `postal_code` (≤20), `tax_id` (≤50), `notes` (≤2000). Text is trimmed; an empty string or `null` clears a value. Unicode is accepted; control characters are rejected. Unknown fields → `422`. `PATCH` accepts any non-empty subset; an `address` object updates only the keys it contains.
+
+*List* (`GET /customers`): `q` (case-insensitive contains over name, email, company), `is_active` (`true|false`), `sort` (`name`, `created_at`; `-` prefix = descending; default `name`), `page`, `page_size`. `created_at` orders by `id` because the `customers` table has no timestamp column. Unknown params → `422`.
+
+*Rules.*
+- Only Admin may send `is_active` on `PATCH /customers/:id` (Staff → `403 FORBIDDEN`, nothing is changed). Deactivation is always allowed; if the customer has active subscriptions, the response carries a `warnings` entry (`field: "is_active"`) and the subscriptions are not touched.
+- Duplicate email is **not** an error (D-09): create/update succeeds with an `email` warning. Staff-created customers keep `user_id = NULL`; they are never linked to a self-registered user by matching email.
+- Concurrent edits: last write wins (no version column / optimistic locking).
+- Address changes never alter issued invoices (invoice snapshots are F12's responsibility).
+- Every create / update / (de)activation / own-profile change writes an `audit_logs` row in the same transaction: actions `customer.create`, `customer.update`, `customer.deactivate`, `customer.reactivate`, `customer.profile_update` (changed fields only; a no-op update writes nothing).
+
+*`/me/profile`.* Response: the customer object **without** `notes`, `is_active`, `has_portal_login` and `warnings`. `PATCH` accepts only `name`, `company_name`, `phone`, `address`. It is a separate strict schema: `email`, `is_active`, `notes`, `tax_id`, `user_id`, `id` or any other field is **rejected with `422`** (never silently applied) and nothing is changed.
+
+*Errors.* `404 NOT_FOUND` unknown customer id; `403 FORBIDDEN` wrong role / Staff `is_active` / customer without a record; `422 VALIDATION_ERROR` with `details[]` (`field` uses dotted paths, e.g. `address.postal_code`).
+
+*CustomerSelect contract (used by F04, F09, F13).* The shared picker calls `GET /customers?q=<text>&is_active=true&sort=name&page_size=10` (debounced 300 ms, only after the user focuses or types; never the whole table) and needs `id`, `name`, `company_name`, `email` from each list row. Front-end props: `value: number | null`, `onChange(customerId | null, customer | null)`, `initialLabel?`, `activeOnly?` (default `true`), `disabled?`, `placeholder?`, `label?`, `debounceMs?`. It renders loading, `No customers match` and error-with-retry states. Import it from `features/customers`; it requires a React Query provider and a back-office session.
+
 ---
 
 ## 5. Products

@@ -175,6 +175,13 @@ Purpose: the billing profile. A customer *may* have a portal login (`user_id`), 
 
 Indexes: UQ(user_id), `(email)`, `(name)` (+ `pg_trgm` GIN on `name` if search is slow; OPEN QUESTION, optional).
 
+**As implemented (F00 baseline `20261031000000_f00_baseline.sql`, verified for F04 — no F04 migration was needed):**
+- Constraints: `pk_customers`, `uq_customers_user_id` UNIQUE(user_id), `fk_customers_user_id` → `users(id)` **ON DELETE CASCADE**. Indexes `ix_customers_email`, `ix_customers_name`. `email` is CITEXT and deliberately **not unique**; no trigram index.
+- There are **no `created_at` / `updated_at` columns**. The list's `sort=created_at` therefore orders by the identity `id`. Concurrent edits are last-write-wins.
+- User ↔ customer link (D-09): a self-registered user gets a linked customer in the same transaction (F01). Customers created by staff (F04) always have `user_id = NULL` and are never linked automatically by matching email; the API only warns when an email is reused. `req.user.customer_id` is resolved by joining `customers.user_id = users.id`, and `/me/profile` uses only that value.
+- Audit: F04 writes `audit_logs` (`entity_type = 'customer'`) through `lib/audit.ts` inside the changing transaction: `customer.create`, `customer.update`, `customer.deactivate`, `customer.reactivate`, `customer.profile_update`, with only changed fields in `old_values` / `new_values`.
+- Address changes do not touch invoices: invoices snapshot the address when created (F12).
+
 ### 4.2 Catalogue
 
 #### `products`
