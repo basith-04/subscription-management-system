@@ -31,7 +31,7 @@ services:
       context: ./backend
       target: migrate
     environment:
-      APP_ENV: production
+      APP_ENV: ${APP_ENV:-development}
       DATABASE_URL: postgres://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:-brightloop}@db:5432/${POSTGRES_DB:-brightloop}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
@@ -47,7 +47,7 @@ services:
       context: ./backend
       target: ${RUNTIME:-node}
     environment:
-      APP_ENV: production
+      APP_ENV: ${APP_ENV:-development}
       HOST: 0.0.0.0
       PORT: 4000
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}

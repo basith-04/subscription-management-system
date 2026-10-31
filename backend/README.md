@@ -113,9 +113,9 @@ curl http://localhost:4000/api/v1/health
 | `JWT_SECRET` | dev-only fallback | Session signing secret, at least 32 characters; required in production |
 | `SESSION_TTL_HOURS` | `8` | Session/cookie lifetime |
 | `SESSION_COOKIE_NAME` | `brightloop_session` | `httpOnly` cookie name |
-| `COOKIE_SECURE` | `true` in production | Require HTTPS for the cookie |
+| `COOKIE_SECURE` | `true` in production | Require HTTPS for the cookie; false is rejected in production |
 | `COOKIE_DOMAIN` | — | Optional host-only domain override |
-| `RATE_LIMIT_MAX` | `10` | Credential attempts per window per IP + email |
+| `RATE_LIMIT_MAX` | `10` | Credential attempts per window per IP and per IP + email |
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Rate-limit window (15 minutes) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Optional first-admin seed (D-08) |
 
@@ -135,7 +135,9 @@ in the repository.
 | `POST` | `/api/v1/auth/logout` | Clear the session cookie (`204`) |
 | `GET` | `/api/v1/auth/me` | Current user from the database-backed session |
 
-Register and login are rate limited. Registration always assigns the
+Register and login are rate limited per IP and per IP/email combination. The
+in-memory limits are per application instance and do not protect across
+instances. Registration always assigns the
 `customer` role server-side and ignores no privilege fields: unknown fields such
 as `role` are rejected with `422`. Passwords must be longer than 8 characters
 and contain upper, lower and special characters. Sessions use an `HttpOnly`,

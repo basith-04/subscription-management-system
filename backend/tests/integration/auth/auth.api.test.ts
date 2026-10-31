@@ -468,7 +468,19 @@ describe.skipIf(!dbAvailable)('F01 auth API', () => {
       expect(limited.body.error.code).toBe('RATE_LIMITED')
       expect(limited.headers['retry-after']).toBeTypeOf('string')
 
-      expect((await attempt('other@example.com')).status).toBe(401)
+      // An IP-wide limit also prevents bypass by changing email addresses.
+      expect((await attempt('other@example.com')).status).toBe(429)
+    })
+
+    it('limits attempts across different emails from the same IP', async () => {
+      const limitedApp = createTestApp(pool, { RATE_LIMIT_MAX: '2' })
+      const attempt = (email: string) => request(limitedApp)
+        .post('/api/v1/auth/login')
+        .send({ email, password: 'Wrong!Pass123' })
+
+      expect((await attempt('one@example.com')).status).toBe(401)
+      expect((await attempt('two@example.com')).status).toBe(401)
+      expect((await attempt('three@example.com')).status).toBe(429)
     })
 
     it('marks the cookie Secure in production', async () => {

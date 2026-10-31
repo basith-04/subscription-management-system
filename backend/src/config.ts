@@ -103,6 +103,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     env.COOKIE_SECURE,
     isProduction,
   )
+  if (isProduction && !cookieSecure) {
+    throw new Error('COOKIE_SECURE must be true in production')
+  }
   const rateLimitWindowMs = parseInteger(
     'RATE_LIMIT_WINDOW_MS',
     env.RATE_LIMIT_WINDOW_MS,

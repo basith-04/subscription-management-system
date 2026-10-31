@@ -38,6 +38,7 @@ Three purposes:
 | `backend/src/app.ts` | EXISTING | F00 | Express app factory; middleware order; `createApp(config)` used by tests. **No business logic here.** |
 | `backend/src/index.ts` | EXISTING | F00 | Bootstrap — reads config, calls `createApp`, listens, wires graceful shutdown. |
 | `backend/src/config.ts` | EXISTING | F00 | The **only** file that reads `process.env`. Extend it when adding env vars. |
+| `backend/src/config.test.ts` | EXISTING | F01 | Production configuration regression tests. |
 | `backend/src/version.ts` | EXISTING | F00 | `VERSION` string surfaced in the health payload. |
 
 ### 1.2 Middleware — `backend/src/middleware/`
@@ -65,6 +66,7 @@ Three purposes:
 | `error-codes.ts` | EXISTING | F00 | Central list of error codes. | Everywhere an error is thrown. |
 | `mailer.ts` | SCAFFOLDED | F00 | Nodemailer wrapper around SMTP (Mailpit locally). Never throws into caller; returns a result. | F02 (reset links), F11 (send invoice). |
 | `audit.ts` | EXISTING | F00 | Transactional insert-only audit row writer. | Every state-changing service. |
+| `session.test.ts` | EXISTING | F01 | JWT signature, expiry-claim and algorithm regression tests. | Authentication. |
 | `scheduler.ts` | SCAFFOLDED | F00 | `registerJob(name, schedule, fn)`, `runJobNow(name)` — `node-cron` wrapper. | `jobs/index.ts` and `<module>.jobs.ts` files. |
 | `state-machine.ts` | SCAFFOLDED | F00 | `transition(entity, from[], to, opts)` — conditional `UPDATE … WHERE status = expected`; `409 INVALID_STATE_TRANSITION` on 0 rows. | `subscriptions.state-machine.ts`, `invoices.state-machine.ts`. |
 | `logger.ts` | SCAFFOLDED | F00 | Request-scoped structured logger. **Never log secrets, passwords, or PII.** | Every layer; don't `console.log`. |

@@ -10,18 +10,16 @@ function emailKey(value: unknown): string {
 }
 
 /**
- * Strict limiter for credential endpoints, keyed by IP + normalized email so
- * changing the case or whitespace of an email does not reset the counter.
+ * Limit both aggregate attempts from an IP and attempts for an IP/email pair.
+ * Email normalization prevents casing and whitespace from resetting the limit.
  */
-export function createAuthRateLimiter(config: Config): RequestHandler {
-  return rateLimit({
+export function createAuthRateLimiter(config: Config): RequestHandler[] {
+  const common = {
     windowMs: config.authRateLimit.windowMs,
     limit: config.authRateLimit.max,
-    standardHeaders: 'draft-7',
+    standardHeaders: 'draft-7' as const,
     legacyHeaders: false,
-    keyGenerator: (req) =>
-      `${ipKeyGenerator(req.ip ?? '')}:${emailKey(req.body?.email)}`,
-    handler: (_req, res, next) => {
+    handler: ((_req, res, next) => {
       res.setHeader(
         'Retry-After',
         String(Math.ceil(config.authRateLimit.windowMs / 1000)),
@@ -33,6 +31,14 @@ export function createAuthRateLimiter(config: Config): RequestHandler {
           'Too many attempts. Please try again later.',
         ),
       )
-    },
-  })
+    }) as RequestHandler,
+  }
+  return [
+    rateLimit(common),
+    rateLimit({
+      ...common,
+      keyGenerator: (req) =>
+        `${ipKeyGenerator(req.ip ?? '')}:${emailKey(req.body?.email)}`,
+    }),
+  ]
 }

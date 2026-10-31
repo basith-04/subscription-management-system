@@ -34,11 +34,12 @@ export async function verifySessionToken(
   try {
     const { payload } = await jwtVerify(token, secretKey(config), {
       algorithms: [ALGORITHM],
+      requiredClaims: ['sub', 'iat', 'exp'],
     })
 
     const userId = Number(payload.sub)
     if (
-      !Number.isInteger(userId) ||
+      !Number.isSafeInteger(userId) ||
       userId <= 0 ||
       typeof payload.role !== 'string'
     ) {
