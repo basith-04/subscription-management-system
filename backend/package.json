@@ -1,39 +1,16 @@
 {
   "name": "brightloop-api",
+  "version": "0.0.0",
   "private": true,
-  "version": "0.1.0",
   "type": "module",
-  "engines": {
-    "node": ">=20.19"
-  },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "dev:bun": "bun --watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "build:bun": "bun build src/index.ts --target=bun --outdir=dist",
-    "start": "node dist/index.js",
-    "start:bun": "bun src/index.ts",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "oxlint src tests"
+    "dev":     "echo TODO: implement dev script",
+    "start":   "echo TODO: implement start script",
+    "test":    "echo TODO: implement test script",
+    "lint":    "echo TODO: implement lint script",
+    "migrate": "echo TODO: implement migrate script",
+    "seed":    "echo TODO: implement seed script"
   },
-  "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.9",
-    "express": "^5.3.0",
-    "helmet": "^8.3.0",
-    "zod": "^4.6.7"
-  },
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^26.6.6",
-    "@types/supertest": "^7.2.1",
-    "oxlint": "^1.90.0",
-    "supertest": "^7.3.1",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.12"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
