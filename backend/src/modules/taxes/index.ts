@@ -1,1 +1,4 @@
-// Public API of the taxes module — exports service functions only. PLACEHOLDER — replace with implementation.
+export { taxesRouter } from './taxes.routes.js'
+export { taxesService } from './taxes.service.js'
+export { taxesRepository } from './taxes.repository.js'
+export * from './taxes.schemas.js'

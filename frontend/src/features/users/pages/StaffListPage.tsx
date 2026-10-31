@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { listUsers, updateUser, createStaff } from '../../../api/users'
 import type { User } from '../types'
 
-export function StaffListPage({ navigate }: { navigate: (path: string) => void }) {
+export function StaffListPage({ navigate: _navigate }: { navigate?: (path: string) => void }) {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

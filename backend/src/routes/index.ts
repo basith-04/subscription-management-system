@@ -6,6 +6,8 @@ import { createCustomersRouter, createMeRouter } from '../modules/customers/cust
 import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
+import { taxesRouter } from '../modules/taxes/index.js'
+import { paymentTermsRouter } from '../modules/payment-terms/index.js'
 import { VERSION } from '../version.js'
 
 export interface HealthPayload {
@@ -49,6 +51,14 @@ export function createApiRouter({
     '/auth',
     createAuthRouter({ service: authService, config, authenticate }),
   )
+  // F05 config
+  router.use('/plans', plansRouter)
+  router.use('/products', productsRouter)
+  router.use('/variants', variantsRouter)
+  router.use('/users', usersRouter)
+  router.use('/taxes', taxesRouter)
+  router.use('/payment-terms', paymentTermsRouter)
+  // main's config
   router.use('/customers', createCustomersRouter(authenticate))
   router.use('/me', createMeRouter(authenticate))
   router.use('/plans', createPlansRouter(authenticate))
@@ -56,5 +66,29 @@ export function createApiRouter({
   router.use('/variants', variantsRouter)
   router.use('/users', usersRouter)
 
+ 
   return router
 }
+
+export const apiRouter = Router()
+
+apiRouter.get('/', (_req, res) => {
+  res.json({
+    data: {
+      name: 'Brightloop Subscription API',
+      version: VERSION,
+      docs: 'See docs/api/api-specification.md',
+    },
+  })
+})
+
+apiRouter.get('/health', (_req, res) => {
+  res.json({ data: healthPayload() })
+})
+
+apiRouter.use('/plans', plansRouter)
+apiRouter.use('/products', productsRouter)
+apiRouter.use('/variants', variantsRouter)
+apiRouter.use('/users', usersRouter)
+apiRouter.use('/taxes', taxesRouter)
+apiRouter.use('/payment-terms', paymentTermsRouter)
