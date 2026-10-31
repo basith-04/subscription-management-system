@@ -31,6 +31,10 @@ Three purposes:
 
 ## 1. Backend — `backend/`
 
+| Documentation file | Status | Purpose |
+|---|---|---|
+| `docs/implementation/auth-integration-checklist.md` | EXISTING | F01 gate, manual walkthrough and pending F02/deployment checklist. |
+
 F01 frontend additions: `frontend/src/features/auth/` contains the login and
 registration pages, password field, auth layout, guarded shells, query hook,
 route guards, CSS and component tests. These implement the F01 paths; password
