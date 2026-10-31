@@ -113,7 +113,7 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | `auth` | `/auth` | F01 (register/login/me/logout) + F02 (forgot/reset/change) | `password_reset_tokens` (F02) | Two features share the folder; F02 adds its service functions to `auth.service.ts`. |
 | `users` | `/users` | F03 | (uses `users`, `roles` from F00) | Adds `last-admin` guard in `users.service.ts`. |
 | `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | Exports `CustomerSelect` on the frontend side. |
-| `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | Exports `computeEffectivePrice` from `index.ts` — F07/F08/F09 import it. |
+| `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | ✅ **IMPLEMENTED.** Exports `computeEffectivePrice` from `index.ts`. |
 | `plans` | `/plans` | F07 | `plans`, `plan_products` | Exports `assertPlanAvailable` from `index.ts` — F09 uses it. |
 | `quotation-templates` | `/quotation-templates` | F08 | `quotation_templates`, `quotation_template_items` | Exports `getTemplateForUse` — F09 uses it. |
 | `subscriptions` | `/subscriptions`, `/quotations` | F09 (create/confirm/cancel) + F10 (activate/pause/renew/close) | `subscriptions`, `subscription_items` (sequence `subscription_number_seq`) | **Two routers** — `subscriptions.routes.ts` and `quotations.routes.ts` — because a quotation **is** a subscription in `draft`/`quotation` status. Adds `subscriptions.state-machine.ts`. F10 also adds `subscriptions.jobs.ts` (activation, quote expiry, expiry/renewal jobs). |
@@ -225,7 +225,7 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `auth` | F01, F02 | `pages/RegisterPage.tsx`, `pages/LoginPage.tsx` (F01); `pages/ForgotPasswordPage.tsx`, `pages/ResetPasswordPage.tsx` (F02); `components/PasswordField.tsx`, `components/AuthCard.tsx`; `hooks/useAuth.ts` (F01); `context/AuthProvider.tsx` (F01). | `useAuth`, `PasswordField`, `AuthCard`. |
 | `users` | F03 | `pages/StaffListPage.tsx`; `components/StaffFormModal.tsx`; `hooks/useStaff.ts`. | – |
 | `customers` | F04 | `pages/CustomerListPage.tsx`, `pages/CustomerDetailPage.tsx`; `components/CustomerSelect.tsx` (shared); `hooks/useCustomers.ts`. | `CustomerSelect`. |
-| `products` | F06 | `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`; `hooks/useProducts.ts`. | `ProductSelect`, `VariantSelect`. |
+| `products` | F06 | ✅ **IMPLEMENTED.** `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`, `pages/ProductFormPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`. | `ProductSelect`, `VariantSelect`. |
 | `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
 | `quotation-templates` | F08 | `pages/TemplateListPage.tsx`, `pages/TemplateFormPage.tsx`; `components/LineItemsEditor.tsx` (shared), `components/TemplateSelect.tsx`; `hooks/useTemplates.ts`. | `LineItemsEditor`, `TemplateSelect`. |
 | `subscriptions` | F09, F10 | `pages/QuotationListPage.tsx`, `pages/SubscriptionListPage.tsx`, `pages/SubscriptionDetailPage.tsx`; `components/StatusTimeline.tsx`, `components/SubscriptionStatusBadge.tsx`, `components/SubscriptionActions.tsx`; `hooks/useSubscriptions.ts`, `hooks/useQuotations.ts`. | `SubscriptionStatusBadge`. |
@@ -372,7 +372,7 @@ The index respects these from the [Directory Guidelines](../development/director
 
 ## 5. Progress tracking
 
-The scaffold marks every placeholder with the literal token `PLACEHOLDER`. The count is your F00 (foundations) progress metric until the first feature merges.
+The scaffold marks every placeholder with the literal token `PLACEHOLDER`. The count is your progress metric. **F06 is merged; its files no longer contain `PLACEHOLDER`.**
 
 ```bash
 # Files still stubbed:
