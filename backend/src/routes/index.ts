@@ -2,7 +2,7 @@ import { Router, type RequestHandler } from 'express'
 import type { Config } from '../config.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
 import type { AuthService } from '../modules/auth/auth.service.js'
-import { plansRouter } from '../modules/plans/plans.routes.js'
+import { createPlansRouter } from '../modules/plans/plans.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
 import { productsRouter, variantsRouter } from '../modules/products/products.routes.js'
 import { VERSION } from '../version.js'
@@ -51,8 +51,7 @@ export function createApiRouter({
   router.use('/plans', createPlansRouter(authenticate))
   router.use('/products', productsRouter)
   router.use('/variants', variantsRouter)
+  router.use('/users', usersRouter)
 
-// F06
-apiRouter.use('/products', productsRouter)
-apiRouter.use('/variants', variantsRouter)
-apiRouter.use('/users', usersRouter)
+  return router
+}
