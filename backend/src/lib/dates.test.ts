@@ -28,7 +28,7 @@ describe('business dates', () => {
 describe('business-date boundaries (D-22)', () => {
   const instant = new Date('2026-11-10T18:29:59Z') // 23:59:59 on the 10th in Asia/Kolkata
   it('rolls over at local midnight, not at UTC midnight', async () => {
-    const { todayInAppTimezone, todayInTimezone } = await import('./dates.js')
+    const { todayInAppTimezone } = await import('./dates.js')
     expect(todayInAppTimezone(instant, 'Asia/Kolkata')).toBe('2026-11-10')
     expect(todayInAppTimezone(new Date(instant.getTime() + 1000), 'Asia/Kolkata')).toBe('2026-11-11')
     expect(todayInAppTimezone(instant, 'UTC')).toBe('2026-11-10')

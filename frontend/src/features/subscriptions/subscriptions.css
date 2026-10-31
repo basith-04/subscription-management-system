@@ -1,0 +1,43 @@
+/* Subscriptions / quotations feature styles — colocated per frontend/AGENTS.md. */
+.sub-page { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem; font-family: system-ui, sans-serif; color: #172333; }
+.sub-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.sub-muted { color: #556; } .sub-error { color: #a31f17; } .sub-field-error { color: #a31f17; font-size: .9rem; margin: .1rem 0; }
+.sub-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.sub-actions button, .sub-button, .sub-primary-link, .sub-pager button, .sub-empty button, .sub-form button, .sub-lines button { padding: .45rem .9rem; border: 1px solid #9aabba; border-radius: .4rem; background: #fff; font: inherit; cursor: pointer; text-decoration: none; color: inherit; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+.sub-primary, .sub-primary-link { background: #154f85 !important; border-color: #154f85 !important; color: #fff !important; }
+.sub-danger { background: #a31f17 !important; border-color: #a31f17 !important; color: #fff !important; }
+.sub-link { background: none !important; border: 0 !important; color: #154f85 !important; text-decoration: underline; }
+.sub-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; margin: 1rem 0; align-items: end; }
+.sub-filters label, .sub-field { display: flex; flex-direction: column; gap: .25rem; font-weight: 600; }
+.sub-filters input, .sub-filters select, .sub-form input, .sub-form select, .sub-form textarea { padding: .5rem; border: 1px solid #9aabba; border-radius: .4rem; font: inherit; }
+.sub-form { display: flex; flex-direction: column; gap: .9rem; max-width: 52rem; }
+.sub-form [aria-invalid="true"] { border-color: #a31f17; }
+.sub-empty { padding: 2rem; text-align: center; border: 1px dashed #9aabba; border-radius: .5rem; }
+.sub-pager { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
+.sub-skeleton { height: 12rem; background: #eef1f4; border-radius: .5rem; display: flex; align-items: center; justify-content: center; }
+.sub-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.sub-table th, .sub-table td { text-align: left; padding: .55rem .5rem; border-bottom: 1px solid #dce3ea; }
+.sub-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+  .sub-table thead { position: absolute; left: -9999px; }
+  .sub-table, .sub-table tbody, .sub-table tr, .sub-table td { display: block; width: 100%; }
+  .sub-table tr { border: 1px solid #dce3ea; border-radius: .5rem; margin-bottom: .75rem; padding: .4rem .6rem; }
+  .sub-table td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: .25rem 0; }
+  .sub-table td::before { content: attr(data-label); font-weight: 600; color: #556; }
+}
+.sub-badge { display: inline-block; padding: .1rem .6rem; border-radius: 1rem; font-size: .8rem; font-weight: 600; border: 1px solid #c8d2dc; background: #eef1f4; }
+.sub-badge--quotation { background: #e8f0f8; color: #154f85; } .sub-badge--confirmed { background: #fff6e0; color: #7a4f00; }
+.sub-badge--active { background: #e8f5ec; color: #1b6e2d; } .sub-badge--closed { background: #f3e1df; color: #6b3a36; }
+.sub-badge--expired { background: #fbe4e2; color: #a31f17; } .sub-badge--paused { background: #fdeede; color: #8a4200; }
+.sub-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .75rem 1.5rem; margin: 1rem 0; }
+.sub-facts div { display: flex; flex-direction: column; } .sub-facts dt { font-size: .8rem; text-transform: uppercase; color: #556; } .sub-facts dd { margin: 0; }
+.sub-totals { display: grid; gap: .25rem; width: min(22rem, 100%); margin: 1rem 0 0 auto; }
+.sub-totals div { display: flex; justify-content: space-between; } .sub-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
+.sub-totals__grand { border-top: 2px solid #172333; font-weight: 700; }
+.sub-section { border-top: 1px solid #dce3ea; margin-top: 1.5rem; padding-top: .5rem; }
+.sub-timeline { padding-left: 1.2rem; } .sub-timeline li { margin-bottom: .4rem; }
+.sub-lines { border: 1px solid #c8d2dc; border-radius: .5rem; padding: .75rem; display: flex; flex-direction: column; gap: .75rem; }
+.sub-line { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .5rem; align-items: end; padding-bottom: .75rem; border-bottom: 1px solid #eef1f4; }
+.sub-line label, .sub-line__field, .sub-line__total { display: flex; flex-direction: column; gap: .25rem; font-weight: 600; }
+.sub-line__total output { font-variant-numeric: tabular-nums; font-weight: 400; padding: .5rem 0; }
