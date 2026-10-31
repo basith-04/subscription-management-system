@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { listProducts } from '../../../api/products'
 import { formatMoney } from '../../../lib/money'
+import { useAuth } from '../../auth/useAuth'
+import { ProductPageHeader } from '../components/ProductPageHeader'
 import type { Product } from '../types'
 
-export function ProductListPage({ navigate }: { navigate: (path: string) => void }) {
+export function ProductListPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -15,33 +20,32 @@ export function ProductListPage({ navigate }: { navigate: (path: string) => void
   }, [])
 
   return (
-    <div className="page">
-      <main style={{ padding: '2rem', width: 'min(1000px, calc(100% - 3rem))', margin: '0 auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div><h1 style={{ fontSize: '1.8rem' }}>Products</h1><p style={{ color: '#6b675f' }}>Catalogue of products with variants.</p></div>
-          <button className="button primary" onClick={() => navigate('/app/products/new')}>New product</button>
-        </header>
+    <main className="products-page">
+      <ProductPageHeader
+        title="Products"
+        description="Catalogue of products with variants."
+        actions={user?.role === 'admin' && <button className="button primary" onClick={() => navigate('/app/products/new')}>New product</button>}
+      />
         {loading && <p>Loading…</p>}
-        {error && <p style={{ color: '#a33030' }}>{error}</p>}
-        {!loading && !error && products.length === 0 && <p style={{ color: '#6b675f' }}>No products yet. Click "New product" to add one.</p>}
+        {error && <p className="products-error">{error}</p>}
+        {!loading && !error && products.length === 0 && <p className="products-muted">No products yet. {user?.role === 'admin' && 'Click “New product” to add one.'}</p>}
         {products.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
-            <thead><tr style={{ textAlign: 'left', borderBottom: '1px solid #e2ded4' }}>
-              <th style={{ padding: '0.75rem 0' }}>Name</th><th>Type</th><th style={{ textAlign: 'right' }}>Sales price</th><th style={{ textAlign: 'right' }}>Cost price</th><th style={{ textAlign: 'center' }}>Active</th>
+          <table className="products-table">
+            <thead><tr>
+              <th>Name</th><th>Type</th><th className="numeric">Sales price</th><th className="numeric">Cost price</th><th className="centered">Active</th>
             </tr></thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product.id} style={{ borderBottom: '1px solid #f2efe8', cursor: 'pointer' }} onClick={() => navigate(`/app/products/${product.id}`)}>
-                  <td style={{ padding: '0.75rem 0', fontWeight: 600 }}>{product.name}</td><td>{product.product_type}</td>
-                  <td style={{ textAlign: 'right' }}>{formatMoney(product.sales_price)}</td><td style={{ textAlign: 'right', color: '#6b675f' }}>{formatMoney(product.cost_price)}</td>
-                  <td style={{ textAlign: 'center' }}>{product.is_active ? '✓' : '—'}</td>
+                <tr key={product.id}>
+                  <td><Link to={`/app/products/${product.id}`}>{product.name}</Link></td><td>{product.product_type}</td>
+                  <td className="numeric">{formatMoney(product.sales_price)}</td><td className="numeric products-muted">{formatMoney(product.cost_price)}</td>
+                  <td className="centered">{product.is_active ? '✓' : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-        <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#6b675f' }}><a href="/" onClick={(e) => { e.preventDefault(); navigate('/') }}>← Back home</a></p>
-      </main>
-    </div>
+      <p><Link className="products-back-link" to="/">← Back home</Link></p>
+    </main>
   )
 }

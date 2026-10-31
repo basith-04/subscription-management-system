@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getHealth, type Health } from './lib/api'
 import { ProductListPage, ProductDetailPage, ProductFormPage } from './features/products'
 import { StaffListPage } from './features/users'
@@ -54,10 +55,10 @@ const renderWithLayout = (Page: React.ReactNode) => (
 
 export default function App() {
   const path = usePath()
-  if (path === '/app/products') return renderWithLayout(<ProductListPage navigate={navigate} />)
-  if (path === '/app/products/new') return renderWithLayout(<ProductFormPage navigate={navigate} />)
+  if (path === '/app/products') return renderWithLayout(<ProductListPage />)
+  if (path === '/app/products/new') return renderWithLayout(<ProductFormPage />)
   const m = path.match(/^\/app\/products\/(\d+)$/)
-  if (m) return renderWithLayout(<ProductDetailPage id={Number(m[1])} navigate={navigate} />)
+  if (m) return renderWithLayout(<ProductDetailPage id={Number(m[1])} />)
   if (path === '/app/users') return renderWithLayout(<StaffListPage navigate={navigate} />)
   if (path === '/app/taxes') return renderWithLayout(<TaxListPage />)
   if (path === '/app/payment-terms') return renderWithLayout(<PaymentTermListPage />)
@@ -89,13 +90,12 @@ function LandingPage() {
           <span className="brand-mark" aria-hidden="true">B</span><span>Brightloop</span>
         </a>
         <nav className="nav" aria-label="Main navigation">
-          <a href="/app/products">Products</a>
-          <a href="/app/taxes">Taxes</a>
-          <a href="/app/payment-terms">Payment Terms</a>
+          <Link to="/app/products">Products</Link>
+          <Link to="/app/taxes">Taxes</Link>
+          <Link to="/app/payment-terms">Payment Terms</Link>
           <a href="#status">Status</a>
-          <a href="/login">Sign in</a>
-          <a href="/register">Register</a>
-          <a href="/docs/api/api-specification.md">API docs</a>
+          <Link to="/login">Sign in</Link>
+          <Link to="/register">Register</Link>
         </nav>
       </header>
       <main>
@@ -104,7 +104,7 @@ function LandingPage() {
           <h1>One platform for the whole subscription lifecycle.</h1>
           <p className="lede">Quote, subscribe, bill, collect, and report — without spreadsheets. Built for the Odoo x Make-A-Ton 9.0 Kochi Hackathon 2026.</p>
           <div className="hero-actions">
-            <a className="button primary" href="/app/products">Open catalogue</a>
+            <Link className="button primary" to="/app/products">Open catalogue</Link>
           </div>
         </section>
         <section className="section">
