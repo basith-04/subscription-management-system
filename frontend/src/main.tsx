@@ -14,6 +14,7 @@ import { InvoiceDetailRoute, InvoiceListRoute, InvoicePrintRoute } from './featu
 import { PaymentListRoute } from './features/payments'
 import { ProfilePage } from './features/portal/pages/ProfilePage'
 import { ProductDetailRoute, ProductFormRoute, ProductListRoute } from './features/products'
+import { AuditLogPage } from './features/audit-logs'
 
 const queryClient = new QueryClient()
 
@@ -45,6 +46,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="products/new" element={<ProductFormRoute />} />
             </Route>
             <Route path="products/:id" element={<ProductDetailRoute />} />
+            <Route element={<RequireRole roles={['admin']} />}>
+              <Route path="settings/audit-log" element={<AuditLogPage />} />
+            </Route>
           </Route>
         </Route>
         {/* Standalone print view: deliberately outside any app chrome. */}

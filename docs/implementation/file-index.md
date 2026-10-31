@@ -268,7 +268,7 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `payments` | F13 | `pages/PaymentListPage.tsx`; `components/RecordPaymentDialog.tsx`, `components/AllocationEditor.tsx`; `hooks/usePayments.ts`. | – |
 | `portal` | F14 | `pages/PortalHomePage.tsx`, `pages/MySubscriptionsPage.tsx`, `pages/MyInvoicesPage.tsx`; `components/`; `hooks/useMySubscriptions.ts`, `hooks/useMyInvoices.ts`. | – |
 | `reports` | F16 | `pages/DashboardPage.tsx`; `components/KpiCard.tsx`, `components/DateRangePicker.tsx`; `hooks/useDashboard.ts`. | – |
-| `audit-logs` | F17 | `pages/AuditLogPage.tsx`; `components/AuditDetailDrawer.tsx`; `hooks/useAuditLogs.ts`. | – |
+| `audit-logs` | F17 | `AuditLogPage.tsx`; `AuditDetailDrawer.tsx`; `EntityHistoryLink.tsx`; URL-bound query state through React Router + TanStack Query. | `api/audit-logs.ts` |
 
 #### 2.3.3 Extra files that land per feature
 

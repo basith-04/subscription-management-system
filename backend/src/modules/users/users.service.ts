@@ -1,5 +1,6 @@
 import { ApiError } from '../../middleware/error-handler.js'
 import { withTransaction, isPgError } from '../../lib/db.js'
+import { writeAudit } from '../../lib/audit.js'
 import { parsePagination, buildMeta } from '../../lib/pagination.js'
 import type { PageMeta } from '../../lib/responses.js'
 import * as repo from './users.repository.js'
@@ -23,11 +24,21 @@ export async function get(id: number): Promise<repo.UserRow> {
 
 export async function createStaff(actorId: number, input: CreateStaffInput): Promise<repo.UserRow> {
   try {
-    return await repo.insertStaff({
-      full_name: input.full_name,
-      email: input.email,
-      password_hash: fakeHash(input.password),
-      created_by: actorId,
+    return await withTransaction(async (tx) => {
+      const staff = await repo.insertStaff(tx, {
+        full_name: input.full_name,
+        email: input.email,
+        password_hash: fakeHash(input.password),
+        created_by: actorId,
+      })
+      await writeAudit(tx, {
+        actorUserId: actorId,
+        action: 'staff.create',
+        entityType: 'user',
+        entityId: staff.id,
+        newValues: { full_name: staff.full_name, email: staff.email, role: staff.role, is_active: staff.is_active },
+      })
+      return staff
     })
   } catch (error) {
     if (isPgError(error) && error.code === '23505') {
@@ -55,8 +66,15 @@ export async function update(actorId: number, id: number, input: UpdateUserInput
       }
     }
 
-    const updated = await repo.updateUser(id, input)
+    const updated = await repo.updateUser(tx, id, input)
     if (!updated) throw new ApiError(404, 'NOT_FOUND', 'User not found')
+    await writeAudit(tx, {
+      actorUserId: actorId,
+      action: input.is_active === false ? 'staff.deactivate' : 'staff.update',
+      entityType: 'user', entityId: id,
+      oldValues: input.is_active === undefined ? undefined : { is_active: true },
+      newValues: input,
+    })
     return updated
   })
 }

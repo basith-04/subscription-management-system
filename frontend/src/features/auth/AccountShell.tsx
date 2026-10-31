@@ -35,6 +35,7 @@ export function AccountShell({ area }: { area: 'portal' | 'app' }) {
         <Link to="/app/invoices">Invoices</Link>
         <Link to="/app/payments">Payments</Link>
         <Link to="/app/products">Products</Link>
+        {user?.role === 'admin' && <Link to="/app/settings/audit-log">Settings → Audit Log</Link>}
       </nav>}
       {area === 'portal' && <p><Link to="/portal/profile">My profile</Link></p>}
       {warnings?.map((warning) => <p key={`${warning.field}:${warning.message}`} role="status">{warning.message}</p>)}
