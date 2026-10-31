@@ -148,6 +148,8 @@ Every module folder has the **same 7 files**. The 7-file purpose table comes fir
 | `subscriptions.state-machine.ts` | — | F09 / F10 | — | F09 pure transition rules exist; shared transactional helper and service wiring remain pending. |
 | `subscriptions.state-machine.test.ts` | — | F09 | — | Unit tests cover every F09 action/state pair and invalid states. |
 | `subscriptions.schemas.test.ts` | — | F09 | — | Request-shape, input-whitelist, date and filter regression tests. |
+| `subscriptions.validation.ts` | — | F09 | — | Pure F07 availability and per-line plan-minimum guard; transaction wiring is pending. |
+| `subscriptions.validation.test.ts` | — | F09 | — | Availability and minimum-quantity guard regression tests. |
 | `users` | `/users` | F03 | (uses `users`, `roles` from F00) | Adds `last-admin` guard in `users.service.ts`. |
 | `customers` | `/customers`, `/me/profile` | F04 | `customers` (from F00) | Exports `CustomerSelect` on the frontend side. |
 | `products` | `/products`, `/variants` | F06 | `products`, `product_variants` | ✅ **IMPLEMENTED.** Exports `computeEffectivePrice` from `index.ts`. |

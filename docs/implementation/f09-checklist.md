@@ -43,6 +43,8 @@ Status: **blocked on prerequisites**. This is not a completed feature.
   validation remain blocked on the missing services and migrations. If both a
   template and a plan are supplied, the service must reject a plan that does not
   match the selected template; request-shape validation cannot check the database.
+- [x] Add a pure F09 plan/minimum-quantity guard that reuses F07's public
+  `assertPlanAvailable`; services must reload the plan and call it transactionally.
 - [ ] Wire pricing into creation, editing and detail responses when F09's
   transaction boundaries and F05/F08 contracts are available.
 
