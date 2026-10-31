@@ -46,7 +46,9 @@ chain remains pending; see API Specification §7.1):
 | `frontend/src/components/LineItemsEditor.test.tsx` | EXISTING | F08 | Editor and exact-money unit/component tests. |
 | `frontend/src/features/quotation-templates/TemplateListPage.tsx` | EXISTING | F08 | List, filter and deactivate templates. |
 | `frontend/src/features/quotation-templates/TemplateFormPage.tsx` | EXISTING | F08 | Create, view and edit templates. |
+| `frontend/src/features/quotation-templates/TemplateFormPage.test.tsx` | EXISTING | F08 | Template payload and Staff read-only tests. |
 | `frontend/src/features/quotation-templates/TemplateSelect.tsx` | EXISTING | F08 | Active template picker for F09. |
+| `frontend/src/features/quotation-templates/TemplateSelect.test.tsx` | EXISTING | F08 | Active-template search and selection tests. |
 
 F01 frontend additions: `frontend/src/features/auth/` contains the login and
 registration pages, password field, auth layout, guarded shells, query hook,

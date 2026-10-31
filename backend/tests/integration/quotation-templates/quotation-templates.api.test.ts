@@ -106,4 +106,16 @@ describe.skipIf(!url)('quotation templates API', () => {
     await db.query('UPDATE plans SET is_active=false WHERE id=1')
     expect((await endpoint().send({ ...body, name: 'Inactive plan' })).status).toBe(422)
   })
+
+  it('supports database BIGINT identifiers above the 32-bit integer range', async () => {
+    await db.query('UPDATE plans SET is_active=true WHERE id=1')
+    await db.query('ALTER TABLE products ALTER COLUMN id RESTART WITH 2147483648')
+    await db.query('ALTER TABLE quotation_templates ALTER COLUMN id RESTART WITH 2147483648')
+    await db.query("INSERT INTO products (name,product_type,sales_price) VALUES ('Large id product','service',5)")
+    const created = await admin.post('/api/v1/quotation-templates').send({ name: 'Large ids', plan_id: 1, validity_days: 10, items: [{ product_id: 2147483648, quantity: 1 }] })
+    expect(created.status).toBe(201)
+    expect(created.body.data.id).toBe(2147483648)
+    expect(created.body.data.items[0].product_id).toBe(2147483648)
+    expect((await admin.get('/api/v1/quotation-templates/2147483648')).status).toBe(200)
+  })
 })
