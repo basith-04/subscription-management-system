@@ -5,6 +5,10 @@ export type Permission =
   | 'taxes:manage'
   | 'payment_terms:read'
   | 'payment_terms:manage'
+  | 'billing:run'
+  | 'billing:view'
+  | 'invoices:read'
+  | 'invoices:manage'
 
 export const rolePermissions: Record<Role, readonly Permission[]> = {
   admin: [
@@ -12,10 +16,17 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     'taxes:manage',
     'payment_terms:read',
     'payment_terms:manage',
+    'billing:run',
+    'billing:view',
+    'invoices:read',
+    'invoices:manage',
   ],
   staff: [
     'taxes:read',
     'payment_terms:read',
+    'billing:view',
+    'invoices:read',
+    'invoices:manage',
   ],
   customer: [],
 }
