@@ -16,6 +16,7 @@ Brightloop is a subscription management platform built for the Odoo x Make-A-Ton
 - [`docs/architecture/billing-engine.md`](../docs/architecture/billing-engine.md)
 - [`docs/architecture/security-and-rbac.md`](../docs/architecture/security-and-rbac.md)
 - [`docs/architecture/user-access-and-authorization.md`](../docs/architecture/user-access-and-authorization.md)
+- [`docs/implementation/file-index.md`](../docs/implementation/file-index.md) — one row per file (purpose, owner, status)
 
 If code and docs disagree, fix the code or update the docs in the same change.
 Do not silently invent a different contract.
@@ -129,3 +130,7 @@ docker build --target bun  -t brightloop-api:bun  .
   `feat(subscriptions): add pause policy check`.
 - Keep changes focused. Do not mix refactors with feature work.
 - Update `README.md` and relevant docs when behaviour or setup changes.
+- When you **add, remove, rename, or repurpose a file**, update its row in
+  [`docs/implementation/file-index.md`](../docs/implementation/file-index.md)
+  in the same change. Delete the file's `PLACEHOLDER — replace with implementation`
+  line when you implement it.
