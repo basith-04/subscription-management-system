@@ -4,7 +4,7 @@
 **Version:** 1.0  
 **Status:** Proposed implementation baseline  
 **Audience:** Senior software engineers, security engineers, and product integration developers  
-**Implementation language:** Go  
+**Implementation language:** TypeScript (Node.js)  
 **Primary database:** PostgreSQL
 
 ---
@@ -648,26 +648,30 @@ Cached authorization must have a bounded lifetime and must not override a known 
 
 ```text
 access-platform/
-├── cmd/
-│   ├── api/
-│   ├── webhook-worker/
-│   └── reconciliation-worker/
+├── src/
+│   ├── index.ts
+│   ├── app.ts
+│   ├── config.ts
+│   ├── workers/
+│   │   ├── webhook.ts
+│   │   └── reconciliation.ts
+│   ├── features/
+│   │   ├── identity/
+│   │   ├── customers/
+│   │   ├── products/
+│   │   ├── policies/
+│   │   ├── entitlements/
+│   │   ├── sessions/
+│   │   ├── routing/
+│   │   ├── webhooks/
+│   │   └── audit/
+│   ├── middleware/
+│   └── lib/
 │
-├── internal/
-│   ├── identity/
-│   ├── customers/
-│   ├── products/
-│   ├── policies/
-│   ├── entitlements/
-│   ├── sessions/
-│   ├── routing/
-│   ├── webhooks/
-│   └── audit/
-│
-├── pkg/
-│   ├── accesssdk/
-│   ├── apicontracts/
-│   └── eventcontracts/
+├── packages/
+│   ├── access-sdk/
+│   ├── api-contracts/
+│   └── event-contracts/
 │
 ├── api/
 │   ├── openapi/
@@ -707,6 +711,6 @@ The subsystem is ready for production when:
 
 **The identity service authenticates the user. The entitlement engine determines what the user may access. The session manager controls the validity of access sessions. The product server enforces the decision.**
 
-These responsibilities must remain separate, even if they are initially implemented within the same Go application.
+These responsibilities must remain separate, even if they are initially implemented within the same Node.js application.
 
 This boundary is essential for supporting arbitrary frontends, multiple products, independently deployed servers, and evolving subscription rules without coupling authentication to individual product implementations.

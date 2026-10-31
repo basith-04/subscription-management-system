@@ -28,7 +28,7 @@ This project is developed by:
 
 ## Documentation
 
-Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design; the application itself is not implemented yet.
+Architecture and planning documents live in [`docs/`](docs/README.md). They describe the **proposed** design. The application is at the **scaffold stage**: the Go API and React frontend have their base structure, but the business features are not implemented yet.
 
 | Document | Description |
 |---|---|
@@ -39,5 +39,28 @@ Architecture and planning documents live in [`docs/`](docs/README.md). They desc
 | [API Specification](docs/api/api-specification.md) | REST API contract draft |
 | [Billing Engine](docs/architecture/billing-engine.md) | Billing logic and duplicate-invoice prevention |
 | [Security & RBAC](docs/architecture/security-and-rbac.md) | Roles, permissions, protection rules |
+| [User Access & Authorization](docs/architecture/user-access-and-authorization.md) | Authentication, entitlements, sessions, webhooks |
 | [Development Roadmap](docs/development/development-roadmap.md) | Phases and team work streams |
 | [Git Workflow](docs/development/git-workflow.md) | Branching, pull requests, code review |
+
+## Repository structure
+
+| Path | Description |
+|---|---|
+| [`backend/`](backend/README.md) | Node.js + Express REST API (TypeScript) |
+| [`frontend/`](frontend/README.md) | React + TypeScript SPA built with Vite |
+| [`docs/`](docs/README.md) | Architecture, API, database, and process documentation |
+
+### Quick start
+
+```bash
+# terminal 1 — API on http://localhost:4000
+cd backend
+npm install
+npm run dev
+
+# terminal 2 — web app on http://localhost:5173
+cd frontend
+npm install
+npm run dev
+```

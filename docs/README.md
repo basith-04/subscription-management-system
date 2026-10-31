@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Status:** Architecture and planning documents. The system is **not implemented yet**; everything here describes the proposed design. Items tagged `OPEN QUESTION` need a team decision.
+> **Status:** Architecture and planning documents. The system is at the **scaffold stage** — the backend and frontend have base structure, but the business features are **not implemented yet**. Everything here describes the proposed design. Items tagged `OPEN QUESTION` need a team decision.
 
 ## Suggested reading order
 
@@ -15,6 +15,7 @@
 | 7 | [Security & RBAC](architecture/security-and-rbac.md) | roles, permissions, protection rules |
 | 8 | [Development Roadmap](development/development-roadmap.md) | phases, parallel work streams, critical path |
 | 9 | [Git Workflow](development/git-workflow.md) | how the four of us collaborate without breaking each other's work |
+| 10 | [User Access & Authorization](architecture/user-access-and-authorization.md) | identity, entitlements, sessions, revocation, webhooks |
 
 ## Conventions used in the docs
 - **[Official]** – required by the problem statement. **[Proposed]** – our engineering decision.
