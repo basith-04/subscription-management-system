@@ -288,6 +288,13 @@ Staff/Admin see all. A customer sees only their own through `/me/subscriptions` 
 | GET | `/payment-terms` | List terms | A, S | — | list | — | — |
 | POST / PATCH | `/payment-terms`, `/payment-terms/:id` | Create / update (`name`, `due_days`, `is_active`) | A | body | term | `due_days ≥ 0` | 409 |
 
+**F05 persistence:** tax rules and payment terms are read and written in
+PostgreSQL. Mutations and their audit records share a transaction. F05 API
+name checks are case-insensitive; database exact-name constraints remain the
+last guard against identical concurrent names. Reference data must be seeded
+after applying the F05 migration. Records from the former process-local store
+are not automatically transferred when switching to PostgreSQL.
+
 ---
 
 ## 10. Discounts

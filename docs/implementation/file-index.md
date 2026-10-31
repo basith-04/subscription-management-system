@@ -38,6 +38,7 @@ Three purposes:
 | Documentation file | Status | Purpose |
 |---|---|---|
 | `docs/implementation/auth-integration-checklist.md` | EXISTING | F01 gate, manual walkthrough and pending F02/deployment checklist. |
+| `backend/tests/integration/catalogue/reference-data.api.test.ts` | EXISTING | F05 PostgreSQL persistence, session authorization, audit and foreign-key integration tests. |
 
 F01 frontend additions: `frontend/src/features/auth/` contains the login and
 registration pages, password field, auth layout, guarded shells, query hook,
