@@ -1,11 +1,2 @@
-:root {
-  color-scheme: light;
-}
-
-body {
-  margin: 0;
-}
-
-#root {
-  min-height: 100vh;
-}
+@import './styles/global.css';
+#root { min-height: 100vh; }

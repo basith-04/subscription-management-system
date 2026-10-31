@@ -257,7 +257,7 @@ Every feature folder has the **same 3 files**. The 3-file purpose table comes fi
 | `users` | F03 | `pages/StaffListPage.tsx`; `components/StaffFormModal.tsx`; `hooks/useStaff.ts`. | – |
 | `customers` | F04 | `pages/CustomerListPage.tsx`, `pages/CustomerFormPage.tsx`, `pages/CustomerDetailPage.tsx`; `components/CustomerSelect.tsx` (shared), `components/CustomerForm.tsx`, `components/CustomerProfileCard.tsx`, `components/CustomerDetailSections.tsx` (named slots for F09 subscriptions, F13 invoices and outstanding amounts); `hooks/useCustomers.ts`, `hooks/useDebouncedValue.ts`; `customers.css`, `__tests__/`. The portal `ProfilePage` is `portal/pages/ProfilePage.tsx` (F04; F14 adds the rest of the portal). | `CustomerSelect`. |
 | `products` | F06 | ✅ **IMPLEMENTED.** `pages/ProductListPage.tsx`, `pages/ProductDetailPage.tsx`, `pages/ProductFormPage.tsx`; `components/VariantsPanel.tsx`, `components/ProductSelect.tsx`, `components/VariantSelect.tsx`. | `ProductSelect`, `VariantSelect`. |
-| `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
+| `plans` | F07 | `pages/PlanListPage.tsx`, `pages/PlanFormPage.tsx`, `pages/PlanDetailPage.tsx`; `routes/PlanListRoute.tsx`; `components/PlanProductsEditor.tsx`, `components/PlanSelect.tsx`, `components/PolicyToggles.tsx`, `components/product-slots.tsx` (TEMPORARY stand-ins for F06 `ProductSelect`/`VariantSelect` and F00 `MoneyInput`); `hooks/usePlans.ts`, `hooks/useUnsavedChangesGuard.ts`; `policies.ts`, `plans.css`; `__tests__/`. | `PlanSelect`. |
 | `quotation-templates` | F08 | `pages/TemplateListPage.tsx`, `pages/TemplateFormPage.tsx`; `components/LineItemsEditor.tsx` (shared), `components/TemplateSelect.tsx`; `hooks/useTemplates.ts`. | `LineItemsEditor`, `TemplateSelect`. |
 | `subscriptions` | F09, F10 | `pages/QuotationListPage.tsx`, `pages/SubscriptionListPage.tsx`, `pages/SubscriptionDetailPage.tsx`; `components/StatusTimeline.tsx`, `components/SubscriptionStatusBadge.tsx`, `components/SubscriptionActions.tsx`; `hooks/useSubscriptions.ts`, `hooks/useQuotations.ts`. | `SubscriptionStatusBadge`. |
 | `taxes` | F05 | `pages/TaxListPage.tsx`; `components/TaxSelect.tsx`; `hooks/useTaxes.ts`. | `TaxSelect`. |
@@ -311,8 +311,8 @@ Generic hooks used by two or more features. Feature hooks live in `features/<f>/
 | File | Status | Owner | Purpose |
 |---|---|---|---|
 | `AuthLayout.tsx` | SCAFFOLDED | F00 | Centered card layout for `/login`, `/register`, `/forgot-password`, `/reset-password`. |
-| `BackOfficeLayout.tsx` | SCAFFOLDED | F00 | Sidebar (from `routes/menu.ts`) + header + content. `RequireAuth` on `/app/*`. |
-| `PortalLayout.tsx` | SCAFFOLDED | F00 | Customer-facing portal chrome. `RequireRole(['customer'])` on `/portal/*`. |
+| `BackOfficeLayout.tsx` | IMPLEMENTED | F00 | Shared paper-cut back-office shell, role-aware navigation, account context and nested route outlet for `/app/*`. |
+| `PortalLayout.tsx` | IMPLEMENTED | F00 | Customer-facing paper-cut portal shell and nested outlet for `/portal/*`. |
 
 ### 2.7 Routing — `frontend/src/routes/`
 

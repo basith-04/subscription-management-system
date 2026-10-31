@@ -1,68 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHealth, type Health } from './lib/api'
-import { ProductListPage, ProductDetailPage, ProductFormPage } from './features/products'
-import { StaffListPage } from './features/users'
-import { AuthProvider } from './lib/auth-context'
-import { TaxListPage } from './features/taxes'
-import { PaymentTermListPage } from './features/payment-terms'
 import './App.css'
 
 type ApiState = { status: 'checking' } | { status: 'online'; health: Health } | { status: 'offline'; message: string }
 
-function usePath(): string {
-  const [path, setPath] = useState(() => window.location.pathname)
-  useEffect(() => {
-    const onChange = () => setPath(window.location.pathname)
-    window.addEventListener('popstate', onChange)
-    return () => window.removeEventListener('popstate', onChange)
-  }, [])
-  return path
-}
-
-export function navigate(to: string): void {
-  if (window.location.pathname === to) return
-  window.history.pushState(null, '', to)
-  window.dispatchEvent(new PopStateEvent('popstate'))
-}
-
-function Sidebar({ navigate }: { navigate: (p: string) => void }) {
-  const role = import.meta.env.VITE_DEMO_USER_ROLE || 'admin'
-
-  return (
-    <nav style={{ width: 240, borderRight: '1px solid #e2ded4', padding: '1rem', background: '#f7f6f2', minHeight: '100vh' }}>
-      <div style={{ fontWeight: 700, marginBottom: '2rem', color: '#1f6f4a', fontSize: '1.2rem' }}>Brightloop</div>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem' }}>
-        <li><a href="/app/products" onClick={e => { e.preventDefault(); navigate('/app/products') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Products</a></li>
-        <li><a href="/app/taxes" onClick={e => { e.preventDefault(); navigate('/app/taxes') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Taxes</a></li>
-        <li><a href="/app/payment-terms" onClick={e => { e.preventDefault(); navigate('/app/payment-terms') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Payment Terms</a></li>
-        {role === 'admin' && (
-          <li><a href="/app/users" onClick={e => { e.preventDefault(); navigate('/app/users') }} style={{display: 'block', padding: '0.5rem', borderRadius: 6, color: '#1c1b18', textDecoration: 'none'}}>Staff</a></li>
-        )}
-      </ul>
-    </nav>
-  )
-}
-
-const renderWithLayout = (Page: React.ReactNode) => (
-  <AuthProvider>
-    <div style={{ display: 'flex' }}>
-      <Sidebar navigate={navigate} />
-      <div style={{ flex: 1 }}>{Page}</div>
-    </div>
-  </AuthProvider>
-)
-
 export default function App() {
-  const path = usePath()
-  if (path === '/app/products') return renderWithLayout(<ProductListPage />)
-  if (path === '/app/products/new') return renderWithLayout(<ProductFormPage />)
-  const m = path.match(/^\/app\/products\/(\d+)$/)
-  if (m) return renderWithLayout(<ProductDetailPage id={Number(m[1])} />)
-  if (path === '/app/users') return renderWithLayout(<StaffListPage navigate={navigate} />)
-  if (path === '/app/taxes') return renderWithLayout(<TaxListPage />)
-  if (path === '/app/payment-terms') return renderWithLayout(<PaymentTermListPage />)
-
   return <LandingPage />
 }
 
@@ -90,25 +33,24 @@ function LandingPage() {
           <span className="brand-mark" aria-hidden="true">B</span><span>Brightloop</span>
         </a>
         <nav className="nav" aria-label="Main navigation">
-          <Link to="/app/products">Products</Link>
-          <Link to="/app/taxes">Taxes</Link>
-          <Link to="/app/payment-terms">Payment Terms</Link>
-          <a href="#status">Status</a>
+          <Link to="/app/customers">Workspace</Link>
+          <a href="#how-it-works">How it works</a>
           <Link to="/login">Sign in</Link>
-          <Link to="/register">Register</Link>
         </nav>
       </header>
       <main>
         <section className="hero">
-          <p className="eyebrow">Subscription Management System</p>
-          <h1>One platform for the whole subscription lifecycle.</h1>
-          <p className="lede">Quote, subscribe, bill, collect, and report — without spreadsheets. Built for the Odoo x Make-A-Ton 9.0 Kochi Hackathon 2026.</p>
+          <p className="eyebrow">Subscription management, made tangible</p>
+          <h1>Run the recurring work without the recurring chaos.</h1>
+          <p className="lede">Brightloop gives your team a calm place to manage people, plans, catalogue rules and billing essentials.</p>
           <div className="hero-actions">
-            <Link className="button primary" to="/app/products">Open catalogue</Link>
+            <Link className="button primary" to="/register">Start your workspace</Link>
+            <Link className="button ghost" to="/login">I already have an account</Link>
           </div>
+          <div className="hero-paper-stack" aria-hidden="true"><span>Plans</span><span>Customers</span><span>Invoices</span></div>
         </section>
-        <section className="section">
-          <h2>What the platform covers</h2>
+        <section id="how-it-works" className="section">
+          <p className="section-kicker">A connected workspace</p><h2>Everything has a place. Nothing feels buried.</h2>
           <div className="card-grid">
             {capabilities.map((c) => <article className="card" key={c.title}><h3>{c.title}</h3><p>{c.body}</p></article>)}
           </div>
