@@ -1,5 +1,10 @@
 # Brightloop API (backend)
 
+Tax and payment-term API writes use PostgreSQL and write audit records in the
+same transaction. Apply F00 and F05 migrations and reference seeds before
+using these endpoints; tests that exercise them require an isolated
+`TEST_DATABASE_URL`.
+
 Node.js + [Express](https://expressjs.com/) + TypeScript HTTP API for the
 Brightloop Subscription Management System.
 
